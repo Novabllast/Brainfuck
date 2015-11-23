@@ -5,7 +5,7 @@
 //
 // Group: 13031 study assistant Angela Promitzer
 //
-// Authors: Manfred Böck 1530598, Anna Haupt 14......, Patrick Struger 1530644
+// Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
 // Latest Changes: 20.11.2015 (by Manfred Böck)
 //-----------------------------------------------------------------------------
