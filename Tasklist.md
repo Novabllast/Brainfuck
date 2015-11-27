@@ -14,7 +14,7 @@ Manfred
 Anna
 - [] break <program counter>
 - [] step [number]
-- [] show [size]
+- [] s how [size]
 - 
 Patrick
 - [] eval <brainfuckstring : maxlen = 80 >
