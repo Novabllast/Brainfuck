@@ -1,11 +1,11 @@
-- [ ] Programmaufruf
-- [ ] Interaktiver Debug Modus
-- [ ] Compiled successfully on Pluto
+
 
 
 Befehle
 
 Manfred
+- [ ] Programmaufruf
+- [ ] Interaktiver Debug Modus
 - [ ] load <filename>
 - [ ] run
 - [x] quit
@@ -23,7 +23,9 @@ Patrick
 - [ ] memory [number] [type]
 - [ ] change [number] [hex_byte]
 
-
+Manfred, Patrick, Anna
+- [ ] Coding Standard
+- [ ] Compiled successfully on Pluto
 
 
 Bonusaufgaben (-b flag)
