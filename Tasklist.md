@@ -1,27 +1,27 @@
-- [] Programmaufruf
-- [] Interaktiver Debug Modus
-- [] Compiled successfully on Pluto
+- [ ] Programmaufruf
+- [ ] Interaktiver Debug Modus
+- [ ] Compiled successfully on Pluto
 
 
 Befehle
 
 Manfred
-- [] load <filename>
-- [] run
+- [ ] load <filename>
+- [ ] run
 - [x] quit
 - [x] EOF
 
 
 Anna
-- [] break <program counter>
-- [] step [number]
-- [] show [size]
+- [ ] break <program counter>
+- [ ] step [number]
+- [ ] show [size]
 
 
 Patrick
-- [] eval <brainfuckstring : maxlen = 80 >
-- [] memory [number] [type]
-- [] change [number] [hex_byte]
+- [ ] eval <brainfuckstring : maxlen = 80 >
+- [ ] memory [number] [type]
+- [ ] change [number] [hex_byte]
 
 
 
