@@ -27,6 +27,6 @@ Patrick
 
 
 Bonusaufgaben (-b flag)
-- [] Support für andere ESOlang
-- [] Brainfuck extensions 
-- [] reverse step
+- [ ] Support für andere ESOlang
+- [ ] Brainfuck extensions 
+- [ ] reverse step
