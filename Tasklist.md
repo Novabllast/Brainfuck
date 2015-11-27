@@ -8,8 +8,8 @@ Befehle
 Manfred
 - [] load <filename>
 - [] run
-- [] quit
-- [] EOF
+- [x] quit
+- [x] EOF
 
 
 Anna
