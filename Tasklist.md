@@ -11,10 +11,13 @@ Manfred
 - [] quit
 - [] EOF
 
+
 Anna
 - [] break <program counter>
 - [] step [number]
-- 
+- [] show [size]
+
+
 Patrick
 - [] eval <brainfuckstring : maxlen = 80 >
 - [] memory [number] [type]
