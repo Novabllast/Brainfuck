@@ -5,16 +5,23 @@
 
 Befehle
 
+Manfred
 - [] load <filename>
 - [] run
-- [] eval <brainfuckstring : maxlen = 80 >
-- [] break <program counter>
-- [] step [number]
-- [] memory [number] [type]
-- [] show [size]
-- [] change [number] [hex_byte]
 - [] quit
 - [] EOF
+
+Anna
+- [] break <program counter>
+- [] step [number]
+- [] show [size]
+- 
+Patrick
+- [] eval <brainfuckstring : maxlen = 80 >
+- [] memory [number] [type]
+- [] change [number] [hex_byte]
+
+
 
 
 Bonusaufgaben (-b flag)
