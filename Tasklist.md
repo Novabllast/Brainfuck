@@ -1,8 +1,3 @@
-
-
-
-Befehle
-
 Manfred
 - [ ] Programmaufruf
 - [ ] Interaktiver Debug Modus
@@ -23,9 +18,12 @@ Patrick
 - [ ] memory [number] [type]
 - [ ] change [number] [hex_byte]
 
+
+
 Manfred, Patrick, Anna
 - [ ] Coding Standard
 - [ ] Compiled successfully on Pluto
+
 
 
 Bonusaufgaben (-b flag)
