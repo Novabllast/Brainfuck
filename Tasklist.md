@@ -1,7 +1,7 @@
 Manfred
-- [ ] Programmaufruf
-- [ ] Interaktiver Debug Modus
-- [ ] load <filename>
+- [x] Programmaufruf
+- [x] Interaktiver Debug Modus
+- [x] load <filename>
 - [ ] run
 - [x] quit
 - [x] EOF
