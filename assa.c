@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 14......, Patrick Struger 1530644
 //
-// Latest Changes: 20.11.2015 (by Manfred Böck)
+// Latest Changes: 28.11.2015 (by Manfred Böck)
 //-----------------------------------------------------------------------------
 //
 
@@ -24,7 +24,7 @@ typedef enum _Boolean_
 char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, unsigned char* program_memory);
 int checkIfCharacterIsBrainfuckCommand(char character_to_check);
-void runBrainfuckFile(char* memory_storage, int file_size,
+void runBrainfuckFile(unsigned char* memory_storage, int file_size,
                       Boolean program_loaded);
 void evalBrainfuckString(char* brainfuckstring);
 void setBreakPoind(int program_counter);
@@ -258,7 +258,7 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 /// @param file_size
 /// @param program_loaded
 //
-void runBrainfuckFile(char* filename, int file_size, Boolean program_loaded) {
+void runBrainfuckFile(unsigned char* filename, int file_size, Boolean program_loaded) {
     if (program_loaded)
     {
       int another_counter = 0;
