@@ -2,7 +2,7 @@ Manfred
 - [x] Programmaufruf
 - [x] Interaktiver Debug Modus
 - [x] load <filename>
-- [ ] run
+- [x] run
 - [x] quit
 - [x] EOF
 
@@ -21,6 +21,7 @@ Patrick
 
 
 Manfred, Patrick, Anna
+- [ ] interpreter
 - [ ] Coding Standard
 - [ ] Compiled successfully on Pluto
 
