@@ -25,6 +25,7 @@ char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, unsigned char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
 void runBrainfuckFile(unsigned char* memory_storage, Boolean program_loaded);
+void interpret(unsigned char* brainfuck_character);
 void evalBrainfuckString(char* brainfuckstring);
 void setBreakPoind(int program_counter);
 void step(int number);
@@ -105,36 +106,34 @@ int main (int argc, char *argv[])
         else if (strcmp(action, "eval") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
+          evalBrainfuckString(first_parameter);
         }
         else if (strcmp(action, "break") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
+          setBreakPoind(first_parameter);
         }
         else if (strcmp(action, "step") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
+          step(first_parameter);
         }
         else if (strcmp(action, "memory") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
           second_parameter = strtok(NULL, " ");
-          printf("%s \n", second_parameter);
+          memory(first_parameter, second_parameter);
         }
         else if (strcmp(action, "show") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
+          show(first_parameter);
         }
         else if (strcmp(action, "change") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          printf("%s \n", first_parameter);
           second_parameter = strtok(NULL, " ");
-          printf("%s \n", second_parameter);
+          change(first_parameter, second_parameter);
         }
         else if (strcmp(action, "quit") == 0)
         {
@@ -258,10 +257,57 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 
 //-----------------------------------------------------------------------------
 ///
+/// This is an example header comment. Copypaste and adapt it!
+///
+/// @param brainfuck_character
+//
+void interpret(unsigned char* brainfuck_character)
+{
+    putchar(brainfuck_character);
+	/*char *d;
+	int  p, r, q;
+	char a[5000], f[5000], b, o;
+	r++;
+	while(*brainfuck_character) {
+		switch(o=1,*brainfuck_character++) {
+		case '<': p--;        break;
+		case '>': p++;        break;
+		case '+': a[p]++;     break;
+		case '-': a[p]--;     break;
+		case '.': putchar(a[p]); fflush(stdout); break;
+		case ',': a[p]=getchar();fflush(stdout); break;
+		case '[':
+			for( b=1,d=brainfuck_character; b && *brainfuck_character; brainfuck_character++ )
+				b+=*brainfuck_character=='[', b-=*brainfuck_character==']';
+			if(!b) {
+				brainfuck_character[-1]=0;
+				while( a[p] )
+					interpret(d);
+				brainfuck_character[-1]=']';
+				break;
+			}
+			break;
+		case ']':
+			puts("UNBALANCED BRACKETS"), exit(0);
+			break;
+		case '#':
+			if(q>2)
+				printf("%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n%*s\n",
+				       *a,a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],3*p+2,"^");
+			break;
+		default: o=0;
+		}
+		if( p<0 || p>100)
+			puts("RANGE ERROR"), exit(0);
+	}
+	r--;*/
+}
+
+//-----------------------------------------------------------------------------
+///
 /// This is an example header comment. Copypaste and adapt it! //TODO
 ///
 /// @param filename
-/// @param file_size
 /// @param program_loaded
 //
 void runBrainfuckFile(unsigned char* memory_storage, Boolean program_loaded) {
@@ -271,7 +317,7 @@ void runBrainfuckFile(unsigned char* memory_storage, Boolean program_loaded) {
       int run_counter = 0;
       for (run_counter = 0; run_counter < program_size; run_counter++)
       {
-        putchar(memory_storage[run_counter]);
+        interpret(memory_storage[run_counter]);
       }
     }
     else
@@ -307,4 +353,72 @@ Boolean isBrainfuckCommand(char character_to_check)
       break;
   }
   return is_brainfuck_Command;
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+void evalBrainfuckString(char* brainfuckstring)
+{
+  printf("%s \n", brainfuckstring);
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+void setBreakPoind(int program_counter)
+{
+  printf("%i \n", program_counter);
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+void step(int number)
+{
+	  printf("%i \n", number);
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+
+void memory(int number, char* type)
+{
+	  printf("%i    %s \n", number, type);
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+
+void show(int size)
+{
+	  printf("%i \n", size);
+}
+
+//-----------------------------------------------------------------------------
+///
+/// This is an example header comment. Copypaste and adapt it!//TODO
+///
+/// @param
+//
+void change(int number, char* hex_byte)
+{
+	  printf("%i  %s\n", number, hex_byte);
 }
