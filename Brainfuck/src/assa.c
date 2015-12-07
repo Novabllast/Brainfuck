@@ -5,7 +5,7 @@
 //
 // Group: 13031 study assistant Angela Promitzer
 //
-// Authors: Manfred Böck 1530598, Anna Haupt 14......, Patrick Struger 1530644
+// Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
 // Latest Changes: 07.12.2015 (by Manfred Böck)
 //-----------------------------------------------------------------------------
@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 typedef enum _Boolean_
 {
@@ -24,13 +25,13 @@ typedef enum _Boolean_
 char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, unsigned char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
-void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment, Boolean program_loaded);
+void runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, Boolean program_loaded);
 void evalBrainfuckString(char* brainfuckstring);
-void setBreakPoind(int program_counter);
-void step(int number);
-void memory(int number, char* type);
-void show(int size);
-void change(int number, char* hex_byte);
+void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded);
+void step(int number, Boolean program_loaded);
+void memory(int number, char* type, Boolean program_loaded);
+void show(int size, Boolean program_loaded);
+void change(int number, char* hex_byte, Boolean program_loaded);
 
 #define INCORRECT_PROGRAM_CALL 1
 #define OUT_OF_MEMORY 2
@@ -47,6 +48,7 @@ int main (int argc, char *argv[])
   char character = NULL;
   unsigned char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
   unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
+  int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
   char* user_input= calloc(1, 1024 * sizeof(char));
   int action_input_counter = 0;
   Boolean is_program_loaded = FALSE;
@@ -104,34 +106,46 @@ int main (int argc, char *argv[])
         else if (strcmp(action, "eval") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          evalBrainfuckString(first_parameter);
+		  if (first_parameter != NULL) {
+			  evalBrainfuckString(first_parameter);
+		  }
         }
         else if (strcmp(action, "break") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          setBreakPoind(atoi(first_parameter));
+		  if (first_parameter != NULL) {
+            setBreakPoint(atoi(first_parameter), break_points, is_program_loaded);
+		  }
         }
         else if (strcmp(action, "step") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          step(atoi(first_parameter));
+		  if (first_parameter != NULL) {
+            step(atoi(first_parameter), is_program_loaded);
+		  }
         }
         else if (strcmp(action, "memory") == 0)
         {
           first_parameter = strtok(NULL, " ");
           second_parameter = strtok(NULL, " ");
-          memory(atoi(first_parameter), second_parameter);
+		  if (first_parameter != NULL && second_parameter != NULL) {
+            memory(atoi(first_parameter), second_parameter, is_program_loaded);
+		  }
         }
         else if (strcmp(action, "show") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          show(atoi(first_parameter));
+		  if (first_parameter != NULL) {
+            show(atoi(first_parameter), is_program_loaded);
+		  }
         }
         else if (strcmp(action, "change") == 0)
         {
           first_parameter = strtok(NULL, " ");
           second_parameter = strtok(NULL, " ");
-          change(atoi(first_parameter), second_parameter);
+		  if (first_parameter != NULL && second_parameter != NULL) {
+            change(atoi(first_parameter), second_parameter, is_program_loaded);
+		  }
         }
         else if (strcmp(action, "quit") == 0)
         {
@@ -186,6 +200,10 @@ int main (int argc, char *argv[])
     }
     free(program_memory);
     program_memory = NULL;
+    free(data_segment);
+    data_segment = NULL;
+    free(break_points);
+    break_points = NULL;
     return 0;
 }
 
@@ -260,16 +278,16 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 /// @param filename
 /// @param program_loaded
 //
-void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment, Boolean program_loaded) {
+void runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, Boolean program_loaded) {
 	if (program_loaded)
     {
       unsigned char ch = NULL;      // current char to be working on
       int run_counter = 0;
       int current_cell_index = 0;
       int bracket_counter = 0;     // to find paired brackets
-      for(run_counter = 0; memory_storage[run_counter]; run_counter++)
+      for(run_counter = 0; program_memory[run_counter]; run_counter++)
         {
-          ch = memory_storage[run_counter];
+          ch = program_memory[run_counter];
           //interpret brainfuck
           switch (ch){
             case '>': // increment pointer
@@ -303,9 +321,9 @@ void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment
                 while(bracket_counter)
                 {
                   run_counter++;
-                  if(memory_storage[run_counter] == ']')
+                  if(program_memory[run_counter] == ']')
                     bracket_counter--;
-                  else if(memory_storage[run_counter] == '[')
+                  else if(program_memory[run_counter] == '[')
                     bracket_counter++;
                 }
               }
@@ -317,9 +335,9 @@ void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment
                 while(bracket_counter)
                 {
                   run_counter--;
-                  if(memory_storage[run_counter] == '[')
+                  if(program_memory[run_counter] == '[')
                     bracket_counter--;
-                  else if(memory_storage[run_counter] == ']')
+                  else if(program_memory[run_counter] == ']')
                     bracket_counter++;
                 }
               }
@@ -337,7 +355,8 @@ void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment
 
 //-----------------------------------------------------------------------------
 ///
-/// This is an example header comment. Copypaste and adapt it!
+/// The function checks whether the given character
+/// is a valid Brainfuck command or not.
 ///
 /// @param character_to_check The character to check.
 ///
@@ -379,11 +398,22 @@ void evalBrainfuckString(char* brainfuckstring)
 ///
 /// This is an example header comment. Copypaste and adapt it!//TODO
 ///
-/// @param
+/// @param program_counter
+///
+/// @param break_points
+///
+/// @param program_loaded
 //
-void setBreakPoind(int program_counter)
+void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded)
 {
-  printf("%i \n", program_counter);
+  if (program_loaded)
+  {
+	  break_points[program_counter] = 1;
+  }
+  else
+  {
+	printf("[ERR] no program loaded\n");
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -392,9 +422,16 @@ void setBreakPoind(int program_counter)
 ///
 /// @param
 //
-void step(int number)
+void step(int number, Boolean program_loaded)
 {
-	  printf("%i \n", number);
+	  if (program_loaded)
+	  {
+
+	  }
+	  else
+	  {
+		printf("[ERR] no program loaded\n");
+	  }
 }
 
 //-----------------------------------------------------------------------------
@@ -404,9 +441,16 @@ void step(int number)
 /// @param
 //
 
-void memory(int number, char* type)
+void memory(int number, char* type, Boolean program_loaded)
 {
-	  printf("%i    %s \n", number, type);
+	  if (program_loaded)
+	  {
+
+	  }
+	  else
+	  {
+		printf("[ERR] no program loaded\n");
+	  }
 }
 
 //-----------------------------------------------------------------------------
@@ -416,9 +460,16 @@ void memory(int number, char* type)
 /// @param
 //
 
-void show(int size)
+void show(int size, Boolean program_loaded)
 {
-	  printf("%i \n", size);
+	  if (program_loaded)
+	  {
+
+	  }
+	  else
+	  {
+		printf("[ERR] no program loaded\n");
+	  }
 }
 
 //-----------------------------------------------------------------------------
@@ -427,7 +478,14 @@ void show(int size)
 ///
 /// @param
 //
-void change(int number, char* hex_byte)
+void change(int number, char* hex_byte, Boolean program_loaded)
 {
-	  printf("%i  %s\n", number, hex_byte);
+	  if (program_loaded)
+	  {
+
+	  }
+	  else
+	  {
+		printf("[ERR] no program loaded\n");
+	  }
 }

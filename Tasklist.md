@@ -3,12 +3,12 @@ Manfred
 - [x] Interaktiver Debug Modus
 - [x] load <filename>
 - [x] run
+- [x] break <program counter>
 - [x] quit
 - [x] EOF
 
 
 Anna
-- [ ] break <program counter>
 - [ ] step [number]
 - [ ] show [size]
 
