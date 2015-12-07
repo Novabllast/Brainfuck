@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 14......, Patrick Struger 1530644
 //
-// Latest Changes: 29.11.2015 (by Manfred Böck)
+// Latest Changes: 07.12.2015 (by Manfred Böck)
 //-----------------------------------------------------------------------------
 //
 
@@ -25,7 +25,6 @@ char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, unsigned char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
 void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment, Boolean program_loaded);
-void interpret(unsigned char brainfuck_character, unsigned char* data_segment);
 void evalBrainfuckString(char* brainfuckstring);
 void setBreakPoind(int program_counter);
 void step(int number);
@@ -40,8 +39,8 @@ void change(int number, char* hex_byte);
 #define PROGRAM_SUCCESSFULLY_LOADED 100
 
 // -e
-// /home/manfred/workspace/Brainfuck/src/hw.bf
-// /home/manfred/workspace/Brainfuck/src/bottles.bf
+// /home/manfred/workspace/git/Brainfuck/Brainfuck/src/hw.bf
+// /home/manfred/workspace/git/Brainfuck/Brainfuck/src/bottles.bf
 
 int main (int argc, char *argv[])
 {
@@ -49,11 +48,11 @@ int main (int argc, char *argv[])
   unsigned char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
   unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
   char* user_input= calloc(1, 1024 * sizeof(char));
-  int action_counter = 0;
-  Boolean is_program_loaded = TRUE;
+  int action_input_counter = 0;
+  Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
 
-  if(argc == 1)                        //Interaktiver Debug Modus
+  if(argc == 1)                        //Interactiv Debug Mode
     {
       while (!close_program) {
         printf("esp> ");
@@ -67,9 +66,9 @@ int main (int argc, char *argv[])
             printf("Error: Out of memory!\n");
             return OUT_OF_MEMORY;
           }
-          user_input[action_counter++]=character;
+          user_input[action_input_counter++]=character;
         }
-        user_input[action_counter++]='\0';
+        user_input[action_input_counter++]='\0';
         int user_input_length = strlen(user_input);
         char delimiter[] = " ";
         char* action = strtok(user_input, delimiter);
@@ -79,7 +78,6 @@ int main (int argc, char *argv[])
         if (strcmp(action, "load") == 0)
         {
           first_parameter = strtok(NULL, delimiter);
-          printf("first: %s\n", first_parameter);
 		  if (!first_parameter) {
 	          printf("[ERR] usage: load brainfuck_filnename\n");//TODO ist diese Ausgabe erlaubt?
 		  } else {
@@ -92,6 +90,7 @@ int main (int argc, char *argv[])
 			  case READING_THE_FILE_FAILED:
 				  break;
 			  case PROGRAM_SUCCESSFULLY_LOADED:
+				  is_program_loaded = TRUE;
 				  break;
 			  default:
 				  break;
@@ -110,29 +109,29 @@ int main (int argc, char *argv[])
         else if (strcmp(action, "break") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          setBreakPoind(first_parameter);
+          setBreakPoind(atoi(first_parameter));
         }
         else if (strcmp(action, "step") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          step(first_parameter);
+          step(atoi(first_parameter));
         }
         else if (strcmp(action, "memory") == 0)
         {
           first_parameter = strtok(NULL, " ");
           second_parameter = strtok(NULL, " ");
-          memory(first_parameter, second_parameter);
+          memory(atoi(first_parameter), second_parameter);
         }
         else if (strcmp(action, "show") == 0)
         {
           first_parameter = strtok(NULL, " ");
-          show(first_parameter);
+          show(atoi(first_parameter));
         }
         else if (strcmp(action, "change") == 0)
         {
           first_parameter = strtok(NULL, " ");
           second_parameter = strtok(NULL, " ");
-          change(first_parameter, second_parameter);
+          change(atoi(first_parameter), second_parameter);
         }
         else if (strcmp(action, "quit") == 0)
         {
@@ -148,7 +147,7 @@ int main (int argc, char *argv[])
                  "memory, show, change, quit & EOF\n", user_input);
         }
         memset(user_input,'\0',user_input_length);
-        action_counter = 0;
+        action_input_counter = 0;
       }
       free(user_input);
       user_input = NULL;
@@ -256,66 +255,79 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 
 //-----------------------------------------------------------------------------
 ///
-/// This is an example header comment. Copypaste and adapt it!
-///
-/// @param brainfuck_character
-//
-void interpret(unsigned char brainfuck_character, unsigned char* data_segment)
-{
-    putchar(brainfuck_character);
-	/*char *d;
-	int  p, r, q;
-	char a[5000], f[5000], b, o;
-	r++;
-	switch(o=1,*brainfuck_character++) {
-		case '<': p--;        break;
-		case '>': p++;        break;
-		case '+': a[p]++;     break;
-		case '-': a[p]--;     break;
-		case '.': putchar(a[p]); fflush(stdout); break;
-		case ',': a[p]=getchar();fflush(stdout); break;
-		case '[':
-			for( b=1,d=brainfuck_character; b && *brainfuck_character; brainfuck_character++ )
-				b+=*brainfuck_character=='[', b-=*brainfuck_character==']';
-			if(!b) {
-				brainfuck_character[-1]=0;
-				while( a[p] )
-					interpret(d);
-				brainfuck_character[-1]=']';
-				break;
-			}
-			break;
-		case ']':
-			puts("UNBALANCED BRACKETS"), exit(0);
-			break;
-		case '#':
-			if(q>2)
-				printf("%2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n%*s\n",
-					   *a,a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],3*p+2,"^");
-			break;
-		default: o=0;
-	}
-	if( p<0 || p>100)
-		puts("RANGE ERROR"), exit(0);
-	r--;*/
-}
-
-//-----------------------------------------------------------------------------
-///
 /// This is an example header comment. Copypaste and adapt it! //TODO
 ///
 /// @param filename
 /// @param program_loaded
 //
 void runBrainfuckFile(unsigned char* memory_storage, unsigned char* data_segment, Boolean program_loaded) {
-    if (program_loaded)
+	if (program_loaded)
     {
-      int program_size = strlen((const char*)memory_storage);
+      unsigned char ch = NULL;      // current char to be working on
       int run_counter = 0;
-      for (run_counter = 0; run_counter < program_size; run_counter++)
-      {
-        interpret(memory_storage[run_counter], data_segment);
-      }
+      int current_cell_index = 0;
+      int bracket_counter = 0;     // to find paired brackets
+      for(run_counter = 0; memory_storage[run_counter]; run_counter++)
+        {
+          ch = memory_storage[run_counter];
+          //interpret brainfuck
+          switch (ch){
+            case '>': // increment pointer
+            	current_cell_index++;
+                ++data_segment;
+              break;
+            case '<': // decrement pointer
+              //if i < 0 ERROR: tried to access invalid => just ignore it
+              if(current_cell_index > 0)
+              {
+            	  current_cell_index--;
+                --data_segment;
+              }
+              break;
+            case '+': // increment pointer value
+            	++*data_segment;
+              break;
+            case '-': // decrement pointer value
+            	--*data_segment;
+              break;
+            case '.': // output pointer value
+              putchar(*data_segment);
+              break;
+            case ',': // read in value
+            	*data_segment = getchar();
+              break;
+            case '[': // start bracket loop
+              if(!*data_segment)
+              {
+                bracket_counter++;
+                while(bracket_counter)
+                {
+                  run_counter++;
+                  if(memory_storage[run_counter] == ']')
+                    bracket_counter--;
+                  else if(memory_storage[run_counter] == '[')
+                    bracket_counter++;
+                }
+              }
+              break;
+            case ']': // end bracket loop
+              if(*data_segment)
+              {
+                bracket_counter++;
+                while(bracket_counter)
+                {
+                  run_counter--;
+                  if(memory_storage[run_counter] == '[')
+                    bracket_counter--;
+                  else if(memory_storage[run_counter] == ']')
+                    bracket_counter++;
+                }
+              }
+              break;
+            default:
+            	break;
+          }
+        }
     }
     else
     {

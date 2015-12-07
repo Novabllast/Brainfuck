@@ -21,7 +21,6 @@ Patrick
 
 
 Manfred, Patrick, Anna
-- [ ] interpreter
 - [ ] Coding Standard
 - [ ] Compiled successfully on Pluto
 
