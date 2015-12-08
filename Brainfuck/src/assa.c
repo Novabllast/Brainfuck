@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 typedef enum _Boolean_
 {
@@ -25,12 +24,12 @@ typedef enum _Boolean_
 char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, unsigned char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
-void runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, Boolean program_loaded);
+int runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition,Boolean program_loaded);
 void evalBrainfuckString(char* brainfuckstring);
 void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded);
-void step(int number, Boolean program_loaded);
+int step(int number, unsigned char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded);
 void memory(int number, char* type, Boolean program_loaded);
-void show(int size, Boolean program_loaded);
+void show(int size, unsigned char* program_memory, int current_position, Boolean program_loaded);
 void change(int number, char* hex_byte, Boolean program_loaded);
 
 #define INCORRECT_PROGRAM_CALL 1
@@ -51,6 +50,7 @@ int main (int argc, char *argv[])
   int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
   char* user_input= calloc(1, 1024 * sizeof(char));
   int action_input_counter = 0;
+  int current_position = 0;
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
 
@@ -101,7 +101,8 @@ int main (int argc, char *argv[])
         }
         else if (strcmp(action, "run") == 0)
         {
-          runBrainfuckFile(program_memory, data_segment, is_program_loaded);
+  		  int endposition = strlen(program_memory);
+          runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
         }
         else if (strcmp(action, "eval") == 0)
         {
@@ -117,12 +118,13 @@ int main (int argc, char *argv[])
             setBreakPoint(atoi(first_parameter), break_points, is_program_loaded);
 		  }
         }
-        else if (strcmp(action, "step") == 0)
+        else if(strcmp(action, "step") == 0)
         {
           first_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL) {
-            step(atoi(first_parameter), is_program_loaded);
+		  if(first_parameter == NULL) {
+		    first_parameter = "1";
 		  }
+          current_position = step(atoi(first_parameter),program_memory, data_segment, break_points, current_position, is_program_loaded);
         }
         else if (strcmp(action, "memory") == 0)
         {
@@ -135,9 +137,10 @@ int main (int argc, char *argv[])
         else if (strcmp(action, "show") == 0)
         {
           first_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL) {
-            show(atoi(first_parameter), is_program_loaded);
+		  if (first_parameter == NULL) {
+            first_parameter = "10";
 		  }
+		  show(atoi(first_parameter), program_memory , current_position, is_program_loaded);
         }
         else if (strcmp(action, "change") == 0)
         {
@@ -190,7 +193,8 @@ int main (int argc, char *argv[])
 		    default:
 			  break;
 		  }
-      	  runBrainfuckFile(program_memory, data_segment, is_program_loaded);
+  		  int endposition = strlen(program_memory);
+      	  current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
         }
         else
         {
@@ -228,7 +232,7 @@ char* get_filename_ext(char *filename) {
 ///
 /// @param filename
 ///
-/// @return int filename extension 4, 2, 100
+/// @return int 4, 2, 100
 //
 int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
   int character_counter = 0;
@@ -278,79 +282,94 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 /// @param filename
 /// @param program_loaded
 //
-void runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, Boolean program_loaded) {
+int runBrainfuckFile(unsigned char* program_memory,
+		              unsigned char* data_segment,
+					  int* break_points,
+		              int startposition, int endposition,
+					  Boolean program_loaded)
+{
+	printf("%d: %d: \n", startposition, endposition);
+	int currrent_position = 0;
 	if (program_loaded)
     {
-      unsigned char ch = NULL;      // current char to be working on
-      int run_counter = 0;
-      int current_cell_index = 0;
-      int bracket_counter = 0;     // to find paired brackets
-      for(run_counter = 0; program_memory[run_counter]; run_counter++)
-        {
-          ch = program_memory[run_counter];
-          //interpret brainfuck
-          switch (ch){
-            case '>': // increment pointer
-            	current_cell_index++;
-                ++data_segment;
-              break;
-            case '<': // decrement pointer
-              //if i < 0 ERROR: tried to access invalid => just ignore it
-              if(current_cell_index > 0)
-              {
-            	  current_cell_index--;
-                --data_segment;
-              }
-              break;
-            case '+': // increment pointer value
-            	++*data_segment;
-              break;
-            case '-': // decrement pointer value
-            	--*data_segment;
-              break;
-            case '.': // output pointer value
-              putchar(*data_segment);
-              break;
-            case ',': // read in value
-            	*data_segment = getchar();
-              break;
-            case '[': // start bracket loop
-              if(!*data_segment)
-              {
-                bracket_counter++;
-                while(bracket_counter)
-                {
-                  run_counter++;
-                  if(program_memory[run_counter] == ']')
-                    bracket_counter--;
-                  else if(program_memory[run_counter] == '[')
-                    bracket_counter++;
-                }
-              }
-              break;
-            case ']': // end bracket loop
-              if(*data_segment)
-              {
-                bracket_counter++;
-                while(bracket_counter)
-                {
-                  run_counter--;
-                  if(program_memory[run_counter] == '[')
-                    bracket_counter--;
-                  else if(program_memory[run_counter] == ']')
-                    bracket_counter++;
-                }
-              }
-              break;
-            default:
-            	break;
-          }
-        }
+	  unsigned char brainfuck_character = NULL;      // current char to be working on
+	  int current_cell_index = 0;
+	  int bracket_counter = 0;     // to find paired brackets
+	  for(currrent_position = startposition;
+		  currrent_position <= endposition; currrent_position++)
+	  {
+		if (break_points[currrent_position] != 1) {
+			brainfuck_character = program_memory[currrent_position];
+			//interpret brainfuck
+			switch (brainfuck_character){
+			  case '>': // increment pointer
+				  current_cell_index++;
+				  ++data_segment;
+				break;
+			  case '<': // decrement pointer
+				//if i < 0 ERROR: tried to access invalid => just ignore it
+				if(current_cell_index > 0)
+				{
+					current_cell_index--;
+				  --data_segment;
+				}
+				break;
+			  case '+': // increment pointer value
+				  ++*data_segment;
+				break;
+			  case '-': // decrement pointer value
+				  --*data_segment;
+				break;
+			  case '.': // output pointer value
+				putchar(*data_segment);
+				break;
+			  case ',': // read in value
+				  *data_segment = getchar();
+				break;
+			  case '[': // start bracket loop
+				if(!*data_segment)
+				{
+				  bracket_counter++;
+				  while(bracket_counter)
+				  {
+					currrent_position++;
+					if(program_memory[currrent_position] == ']')
+					  bracket_counter--;
+					else if(program_memory[currrent_position] == '[')
+					  bracket_counter++;
+				  }
+				}
+				break;
+			  case ']': // end bracket loop
+				if(*data_segment)
+				{
+				  bracket_counter++;
+				  while(bracket_counter)
+				  {
+					currrent_position--;
+					if(program_memory[currrent_position] == '[')
+					  bracket_counter--;
+					else if(program_memory[currrent_position] == ']')
+					  bracket_counter++;
+				  }
+				}
+				break;
+			  default:
+				  break;
+			}
+		}
+		else
+		{
+			break_points[currrent_position] = 0;
+
+		}
+	  }
     }
     else
     {
       printf("[ERR] no program loaded\n");
     }
+	return currrent_position;
 }
 
 //-----------------------------------------------------------------------------
@@ -422,16 +441,17 @@ void setBreakPoint(int program_counter, int* break_points, Boolean program_loade
 ///
 /// @param
 //
-void step(int number, Boolean program_loaded)
+int step(int number, unsigned char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded)
 {
-	  if (program_loaded)
-	  {
-
-	  }
-	  else
-	  {
-		printf("[ERR] no program loaded\n");
-	  }
+  if (program_loaded)
+  {
+    current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, number, program_loaded);
+  }
+  else
+  {
+    printf("[ERR] no program loaded\n");
+  }
+  return current_position;
 }
 
 //-----------------------------------------------------------------------------
@@ -460,16 +480,21 @@ void memory(int number, char* type, Boolean program_loaded)
 /// @param
 //
 
-void show(int size, Boolean program_loaded)
+void show(int size, unsigned char* program_memory,  int current_position, Boolean program_loaded)
 {
-	  if (program_loaded)
-	  {
-
-	  }
-	  else
-	  {
-		printf("[ERR] no program loaded\n");
-	  }
+  int step_counter = 0;
+  if (program_loaded)
+  {
+	int endposition = size + current_position -1;
+	for (step_counter =  current_position; step_counter < endposition; step_counter++) {
+	  putchar(program_memory[step_counter]);
+	}
+	printf("\n");
+  }
+  else
+  {
+	printf("[ERR] no program loaded\n");
+  }
 }
 
 //-----------------------------------------------------------------------------
