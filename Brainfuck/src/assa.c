@@ -93,6 +93,7 @@ int main (int argc, char *argv[])
 				  break;
 			  case PROGRAM_SUCCESSFULLY_LOADED:
 				  is_program_loaded = TRUE;
+				  data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
 				  break;
 			  default:
 				  break;
@@ -103,6 +104,7 @@ int main (int argc, char *argv[])
         {
   		  int endposition = strlen(program_memory);
           runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+          is_program_loaded = FALSE;
         }
         else if (strcmp(action, "eval") == 0)
         {
@@ -251,12 +253,14 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
     else
     {
       int program_memory_size = sizeof(char)/sizeof(program_memory[0]);
+      int program_memory_size_limit = 1023;
       while((character = fgetc(file_to_read)) != EOF)
       {
         if(isBrainfuckCommand(character)) {
           program_memory[character_counter++]=character;
-		  if (program_memory_size <= 1024) { //TODO keine ahnung wie die abfrage lauten soll
+		  if (program_memory_size == program_memory_size_limit) { //TODO keine ahnung wie die abfrage lauten soll
           //printf("i: %i D: %i", program_memory_size, strlen((const char*)program_memory));
+			  program_memory_size_limit *= 2;
 			  program_memory=realloc(program_memory, 2*program_memory_size);
 		  }
           if(program_memory == NULL)
