@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 12.12.2015 (by Patrick Struger)
+// Latest Changes: 13.12.2015 (by Patrick Struger)
 //-----------------------------------------------------------------------------
 //
 
@@ -22,15 +22,15 @@ typedef enum _Boolean_
 } Boolean;
 
 char *get_filename_ext(char* filename);
-int loadBrainfuckFile(char* filename, unsigned char* program_memory);
+int loadBrainfuckFile(char* filename, char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
-int runBrainfuckFile(unsigned char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition,Boolean program_loaded);
-void evalBrainfuckString(char* brainfuckstring);
+int runBrainfuckFile(char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition,Boolean program_loaded);
+Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded);
-int step(int number, unsigned char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded);
-void memory(int number, char* type, Boolean program_loaded);
-void show(int size, unsigned char* program_memory, int current_position, Boolean program_loaded);
-void change(int number, char* hex_byte, Boolean program_loaded);
+int step(int number, char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded);
+void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned char* data_segment);
+void show(int size, char* program_memory, int current_position, Boolean program_loaded);
+void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned char* data_segment);
 
 #define INCORRECT_PROGRAM_CALL 1
 #define OUT_OF_MEMORY 2
@@ -48,14 +48,16 @@ void change(int number, char* hex_byte, Boolean program_loaded);
 int main (int argc, char *argv[])
 {
   char character = NULL;
-  unsigned char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
-  unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
+  char* eval_program_memory = NULL; //TODO (Newsgroup)
+  unsigned char* data_segment = NULL; //TODO
+  char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
   int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
   char* user_input= calloc(1, 1024 * sizeof(char));
   int action_input_counter = 0;
   int current_position = 0;
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
+  Boolean is_data_segment_loaded = FALSE;
 
   //Interactive Debug Mode
   if(argc == 1)
@@ -103,6 +105,13 @@ int main (int argc, char *argv[])
               break;
             case PROGRAM_SUCCESSFULLY_LOADED:
               is_program_loaded = TRUE;
+              is_data_segment_loaded = TRUE;
+              //Reset data_segment for new program
+              if(data_segment != NULL)
+              {
+                free(data_segment);
+                data_segment = NULL;
+              }
               data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
               break;
             default:
@@ -121,7 +130,21 @@ int main (int argc, char *argv[])
         first_parameter = strtok(NULL, " ");
         if (first_parameter != NULL)
         {
-          evalBrainfuckString(first_parameter);
+          Boolean check = FALSE;
+          if(data_segment == NULL)
+          {
+            data_segment = calloc(1024, 1024 * sizeof(char));
+          }
+          check = evalBrainfuckString(first_parameter, eval_program_memory, data_segment, current_position, break_points);
+          if(check)
+          {
+            is_data_segment_loaded = TRUE;
+          }
+          if(data_segment == NULL)
+          {
+            printf("Segment is empty!\n");
+            is_data_segment_loaded = TRUE;
+          }
         }
       }
       else if (strcmp(action, "break") == 0)
@@ -145,9 +168,21 @@ int main (int argc, char *argv[])
       {
         first_parameter = strtok(NULL, " ");
         second_parameter = strtok(NULL, " ");
-        if (first_parameter != NULL && second_parameter != NULL)
+        if (first_parameter != NULL && second_parameter == NULL)
         {
-          memory(atoi(first_parameter), second_parameter, is_program_loaded);
+          //Default-values
+          second_parameter = "hex";
+          memory(atoi(first_parameter), second_parameter, is_data_segment_loaded, data_segment);
+        }
+        else if (first_parameter == NULL && second_parameter == NULL)
+        {
+          //Default-values
+          second_parameter = "hex";
+          memory(current_position, second_parameter, is_data_segment_loaded, data_segment);
+        }
+        else if (first_parameter != NULL && second_parameter != NULL)
+        {
+          memory(atoi(first_parameter), second_parameter, is_data_segment_loaded, data_segment);
         }
       }
       else if (strcmp(action, "show") == 0)
@@ -163,9 +198,13 @@ int main (int argc, char *argv[])
       {
         first_parameter = strtok(NULL, " ");
         second_parameter = strtok(NULL, " ");
-        if (first_parameter != NULL && second_parameter != NULL)
+        if (first_parameter == NULL && second_parameter == NULL)
         {
-          change(atoi(first_parameter), second_parameter, is_program_loaded);
+          change(current_position, "00", is_data_segment_loaded, data_segment);
+        }
+        else if (first_parameter != NULL && second_parameter != NULL)
+        {
+          change(atoi(first_parameter), second_parameter, is_data_segment_loaded, data_segment);
         }
       }
       else if (strcmp(action, "quit") == 0)
@@ -198,33 +237,33 @@ int main (int argc, char *argv[])
   
   else if(argc >= 3)
   {
-      if(strcmp(argv[1], "-e") == 0)
+    if(strcmp(argv[1], "-e") == 0)
+    {
+      char* filename = argv[2];
+      int has_succeeded = -1;
+      has_succeeded = loadBrainfuckFile(filename, program_memory);
+      switch (has_succeeded)
       {
-        char* filename = argv[2];
-        int has_succeeded = -1;
-        has_succeeded = loadBrainfuckFile(filename, program_memory);
-        switch (has_succeeded)
-        {
-          case OUT_OF_MEMORY:
-            return OUT_OF_MEMORY;
-            break;
-          case READING_THE_FILE_FAILED:
-            return READING_THE_FILE_FAILED;
-            break;
-          case PROGRAM_SUCCESSFULLY_LOADED:
-            is_program_loaded = TRUE;
-            break;
-          default:
-            break;
-        }
-  		  int endposition = strlen(program_memory);
-      	current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+        case OUT_OF_MEMORY:
+          return OUT_OF_MEMORY;
+          break;
+        case READING_THE_FILE_FAILED:
+          return READING_THE_FILE_FAILED;
+          break;
+        case PROGRAM_SUCCESSFULLY_LOADED:
+          is_program_loaded = TRUE;
+          break;
+        default:
+          break;
       }
-      else
-      {
-        printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
-        return INCORRECT_PROGRAM_CALL;
-      }
+      int endposition = strlen(program_memory);
+      current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+    }
+    else
+    {
+      printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
+      return INCORRECT_PROGRAM_CALL;
+    }
   }
   free(program_memory);
   program_memory = NULL;
@@ -259,7 +298,7 @@ char* get_filename_ext(char *filename)
 ///
 /// @return int 4, 2, 100
 //
-int loadBrainfuckFile(char *filename, unsigned char* program_memory)
+int loadBrainfuckFile(char *filename, char* program_memory)
 {
   int character_counter = 0;
   char character;
@@ -312,7 +351,7 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory)
 /// @param filename
 /// @param program_loaded
 //
-int runBrainfuckFile(unsigned char* program_memory,
+int runBrainfuckFile(char* program_memory,
                      unsigned char* data_segment,
                      int* break_points,
                      int startposition, int endposition,
@@ -321,16 +360,16 @@ int runBrainfuckFile(unsigned char* program_memory,
 	printf("%d: %d: \n", startposition, endposition);
 	int currrent_position = 0;
 	if (program_loaded)
-  {
+	{
 	  // current char to be working on
-    unsigned char brainfuck_character = NULL;
+	  unsigned char brainfuck_character = NULL;
 	  int current_cell_index = 0;
 	  // to find paired brackets
     int bracket_counter = 0;
 	  for(currrent_position = startposition;
 		  currrent_position <= endposition; currrent_position++)
 	  {
-      if (break_points[currrent_position] != 1)
+	    if (break_points[currrent_position] != 1)
       {
         brainfuck_character = program_memory[currrent_position];
         //interpret brainfuck
@@ -441,9 +480,36 @@ Boolean isBrainfuckCommand(char character_to_check)
 ///
 /// @param
 //
-void evalBrainfuckString(char* brainfuckstring)
+Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int* break_points)
 {
-  printf("%s \n", brainfuckstring);
+  if(strlen(brainfuckstring) < 80)
+  {
+    int string_index;
+    int str_length = strlen(brainfuckstring);
+    //check if it is a brainfuck command
+    for(string_index = 0; string_index < strlen(brainfuckstring); string_index++)
+    {
+      if(!isBrainfuckCommand(brainfuckstring[string_index]))
+      {
+        return FALSE;
+      }
+    }
+    if(eval_program_memory == NULL)
+    {
+      eval_program_memory = calloc(str_length + 1, (str_length + 1) * sizeof(char));
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
+    strcpy(eval_program_memory, brainfuckstring);
+    int endposition = strlen(eval_program_memory);
+    runBrainfuckFile(eval_program_memory, data_segment, break_points, current_position, endposition, TRUE);
+    free(eval_program_memory);
+    eval_program_memory = NULL;
+  }
+  else
+  {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 //-----------------------------------------------------------------------------
@@ -474,7 +540,7 @@ void setBreakPoint(int program_counter, int* break_points, Boolean program_loade
 ///
 /// @param
 //
-int step(int number, unsigned char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded)
+int step(int number, char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded)
 {
   if (program_loaded)
   {
@@ -494,16 +560,45 @@ int step(int number, unsigned char* program_memory, unsigned char* data_segment,
 /// @param
 //
 
-void memory(int number, char* type, Boolean program_loaded)
+void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned char* data_segment)
 {
-	  if (program_loaded)
-	  {
-
-	  }
-	  else
-	  {
-      printf("[ERR] no program loaded\n");
-	  }
+  if (is_data_segment_loaded)
+  {
+    if (strcmp(type, "hex") == 0)
+    {
+      printf("Hex at %d: 0x%x\n", number, data_segment[number]);
+    }
+    else if (strcmp(type, "int") == 0)
+    {
+      printf("Integer at %d: %d\n", number, data_segment[number]);
+    }
+    else if (strcmp(type, "char") == 0)
+    {
+      printf("Character at %d: %c\n", number, data_segment[number]);
+    }
+    else if (strcmp(type, "bin") == 0)
+    {
+      int bin_index;
+      int bin_size = 8;
+      int bin[8] = {0};
+      int decimal = data_segment[number];
+      for (bin_index = 0; decimal > 0; bin_index++)
+      {
+        bin[bin_index] = decimal % 2;
+        decimal = decimal / 2;
+      }
+      printf("Binary at %d: ", number);
+      for (bin_index = (bin_size-1); bin_index >= 0; bin_index--)
+      {
+        printf("%d", bin[bin_index]);
+      }
+      printf("\n");
+    }
+  }
+  else
+  {
+    printf("[ERR] no program loaded\n");
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -513,7 +608,7 @@ void memory(int number, char* type, Boolean program_loaded)
 /// @param
 //
 
-void show(int size, unsigned char* program_memory,  int current_position, Boolean program_loaded)
+void show(int size, char* program_memory,  int current_position, Boolean program_loaded)
 {
   int step_counter = 0;
   if (program_loaded)
@@ -537,11 +632,14 @@ void show(int size, unsigned char* program_memory,  int current_position, Boolea
 ///
 /// @param
 //
-void change(int number, char* hex_byte, Boolean program_loaded)
+void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned char* data_segment)
 {
-	  if (program_loaded)
+	  if (is_data_segment_loaded)
 	  {
-
+      char hex[sizeof(hex_byte)+3] = "0x";
+      strcat(hex, hex_byte);
+      int hexToint = (int)strtol(hex, NULL, 0);
+      data_segment[number] = hexToint;
 	  }
 	  else
 	  {
