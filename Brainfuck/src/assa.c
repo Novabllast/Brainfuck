@@ -28,7 +28,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      Boolean program_loaded);
 int eval(char* brainfuckstring, char* eval_program_memory,
                         unsigned char* data_segment, int current_position,
-                        int segment_position, int* break_points);
+                        int seg_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points,
                    Boolean program_loaded);
 int step(int number, char* program_memory, unsigned char* data_segment,
@@ -504,7 +504,7 @@ Boolean isBrainfuckCommand(char character_to_check)
 //
 int eval(char* brainfuckstring, char* eval_program_memory,
                         unsigned char* data_segment, int current_position,
-                        int segment_position, int* break_points)
+                        int seg_position, int* break_points)
 {
   if(strlen(brainfuckstring) < 80)
   {
