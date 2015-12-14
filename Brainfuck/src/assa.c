@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
   Boolean is_data_segment_loaded = FALSE;
-  Boolean run_instructions = TRUE;
+  Boolean run_instructions = FALSE;
 
   //Interactive Debug Mode
   if(argc == 1)
@@ -136,7 +136,12 @@ int main (int argc, char *argv[])
         current_position = runBrainfuckFile(program_memory, data_segment,
                                             break_points, current_position,
                                             endposition, run_instructions);
-        run_instructions = FALSE;
+    	int instructions_length = strlen(program_memory);
+    	printf("I: %i      %d", instructions_length, current_position);
+    	if (current_position > instructions_length &&
+        		current_position != 0) {
+            run_instructions = FALSE;
+    	}
       }
       else if (strcmp(action, "eval") == 0)
       {
@@ -175,6 +180,12 @@ int main (int argc, char *argv[])
         current_position = step(atoi(first_parameter),program_memory,
                                 data_segment, break_points, current_position,
                                 is_program_loaded);
+    	int instructions_length = strlen(program_memory);
+    	printf("I: %i      %d", instructions_length, current_position);
+    	if (current_position > instructions_length &&
+    		current_position != 0) {
+            run_instructions = FALSE;
+    	}
       }
       else if (strcmp(action, "memory") == 0)
       {
@@ -360,19 +371,18 @@ int runBrainfuckFile(char* program_memory,
                      int startposition, int endposition,
                      Boolean run_instructions)
 {
-	int currrent_position = 0;
-	if (run_instructions)
-	{
-	  Boolean break_point_detected = FALSE;
-    // current char to be working on
-	  unsigned char brainfuck_character = NULL;
-	  int current_cell_index = 0;
-	  // to find paired brackets
+  int currrent_position = 0;
+  if (run_instructions)
+  {
+	Boolean break_point_detected = FALSE;
+	unsigned char brainfuck_character = NULL;
+	int current_cell_index = 0;
+	// to find paired brackets
     int bracket_counter = 0;
-	  for(currrent_position = startposition; !break_point_detected &&
+	for(currrent_position = startposition; !break_point_detected &&
         currrent_position <= endposition; currrent_position++)
-	  {
-	    if (break_points[currrent_position] != 1)
+	{
+      if (break_points[currrent_position] != 1)
       {
         brainfuck_character = program_memory[currrent_position];
         //interpret brainfuck
@@ -446,7 +456,7 @@ int runBrainfuckFile(char* program_memory,
   {
     printf(NO_PROGRAM_LOADED);
   }
-	return currrent_position;
+  return currrent_position;
 }
 
 //-----------------------------------------------------------------------------
