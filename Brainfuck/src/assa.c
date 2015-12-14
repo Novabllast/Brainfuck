@@ -47,7 +47,8 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded,
 #define PROGRAM_SUCCESSFULLY_LOADED 100
 #define NO_PROGRAM_LOADED "[ERR] no program loaded\n"
 #define WRONG_PARAMETER_COUNT "[ERR] wrong parameter count\n"
-
+#define READING_THE_FILE_FAILED_MESSAGE "[ERR] reading the file failed\n"
+#define ERROR_OUT_OF_MEMORY "Error: Out of memory!\n"
 // -e
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/hw.bf
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/bottles.bf
@@ -84,7 +85,7 @@ int main (int argc, char *argv[])
         {
           free(user_input);
           user_input = NULL;
-          printf("Error: Out of memory!\n");
+          printf(ERROR_OUT_OF_MEMORY);
           return OUT_OF_MEMORY;
         }
         user_input[action_input_counter++]=character;
@@ -109,6 +110,7 @@ int main (int argc, char *argv[])
               return OUT_OF_MEMORY;
               break;
             case READING_THE_FILE_FAILED:
+              printf(READING_THE_FILE_FAILED_MESSAGE);
               break;
             case PROGRAM_SUCCESSFULLY_LOADED:
               run_instructions = TRUE;
@@ -308,7 +310,6 @@ int loadBrainfuckFile(char *filename, char* program_memory)
   FILE *file_to_read = fopen(filename, "r");
   if (file_to_read == 0)
   {
-    printf("[ERR] reading the file failed\n");
     return_value = READING_THE_FILE_FAILED;
   }
   else
@@ -329,7 +330,7 @@ int loadBrainfuckFile(char *filename, char* program_memory)
         {
           free(program_memory);
           program_memory = NULL;
-          printf("Error: Out of memory!\n");
+          printf(ERROR_OUT_OF_MEMORY);
           return_value =  OUT_OF_MEMORY;
         }
       }
