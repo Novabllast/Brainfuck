@@ -7,13 +7,14 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 13.12.2015 (by Patrick Struger)
+// Latest Changes: 14.12.2015 (by Patrick Struger)
 //-----------------------------------------------------------------------------
 //
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef enum _Boolean_
 {
@@ -23,8 +24,8 @@ typedef enum _Boolean_
 
 int loadBrainfuckFile(char* filename, char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
-int runBrainfuckFile(char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition,Boolean program_loaded);
-Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int* break_points);
+int runBrainfuckFile(char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition, Boolean program_loaded);
+int evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded);
 int step(int number, char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded);
 void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned char* data_segment);
@@ -54,6 +55,7 @@ int main (int argc, char *argv[])
   char* user_input= calloc(1, 1024 * sizeof(char));
   int action_input_counter = 0;
   int current_position = 0;
+  int segment_position = 0;
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
   Boolean is_data_segment_loaded = FALSE;
@@ -131,9 +133,8 @@ int main (int argc, char *argv[])
         first_parameter = strtok(NULL, " ");
         if (first_parameter != NULL)
         {
-          Boolean check = FALSE;
-          check = evalBrainfuckString(first_parameter, eval_program_memory, data_segment, current_position, break_points);
-          if(check)
+          segment_position = evalBrainfuckString(first_parameter, eval_program_memory, data_segment, current_position, segment_position, break_points);
+          if(segment_position >= 0)
           {
             is_data_segment_loaded = TRUE;
           }
@@ -170,7 +171,7 @@ int main (int argc, char *argv[])
         {
           //Default-values
           second_parameter = "hex";
-          memory(current_position, second_parameter, is_data_segment_loaded, data_segment);
+          memory(segment_position, second_parameter, is_data_segment_loaded, data_segment);
         }
         else if (first_parameter != NULL && second_parameter != NULL)
         {
@@ -184,7 +185,6 @@ int main (int argc, char *argv[])
         {
           first_parameter = "10";
         }
-        printf("%d", current_position);
         show(atoi(first_parameter), program_memory , current_position, is_program_loaded);
       }
       else if (strcmp(action, "change") == 0)
@@ -197,7 +197,12 @@ int main (int argc, char *argv[])
         }
         else if (first_parameter != NULL && second_parameter != NULL)
         {
-          change(atoi(first_parameter), second_parameter, is_data_segment_loaded, data_segment);
+          char compare_string[] = "0x";
+          //compare the two first characters
+          if(strncmp(second_parameter, compare_string, 2) != 0)
+          {
+            change(atoi(first_parameter), second_parameter, is_data_segment_loaded, data_segment);
+          }
         }
       }
       else if (strcmp(action, "quit") == 0)
@@ -208,13 +213,6 @@ int main (int argc, char *argv[])
       else if(strcmp(user_input, "EOF") == 0)
       {
         close_program = TRUE;
-      }
-      else
-      {
-        printf("Command: %s is not available.\n"
-           "Available Commands: "
-           "load, run, eval, break, step, "
-           "memory, show, change, quit & EOF\n", user_input);
       }
       memset(user_input,'\0',user_input_length);
       action_input_counter = 0;
@@ -330,8 +328,6 @@ int runBrainfuckFile(char* program_memory,
                      int startposition, int endposition,
                      Boolean run_instructions)
 {
-  //Muss noch geloescht werden
-  printf("%d: %d: \n", startposition, endposition);
 	int currrent_position = 0;
 	if (run_instructions)
 	{
@@ -457,8 +453,9 @@ Boolean isBrainfuckCommand(char character_to_check)
 ///
 /// @param
 //
-Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int* break_points)
+int evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points)
 {
+  int position = seg_position;
   if(strlen(brainfuckstring) < 80)
   {
     int string_index;
@@ -468,9 +465,24 @@ Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, un
     {
       if(!isBrainfuckCommand(brainfuckstring[string_index]))
       {
-        return FALSE;
+        return -1;
+      }
+      else
+      {
+        if(strcmp(brainfuckstring[string_index], ">") == 0)
+        {
+          position++;
+        }
+        else if(strcmp(brainfuckstring[string_index], "<") == 0)
+        {
+          if(position > 0)
+          {
+            position--;
+          }
+        }
       }
     }
+    printf("%d", position);
     if(eval_program_memory == NULL)
     {
       eval_program_memory = calloc(str_length + 1, (str_length + 1) * sizeof(char));
@@ -484,9 +496,9 @@ Boolean evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, un
   }
   else
   {
-    return FALSE;
+    return -1;
   }
-  return TRUE;
+  return position;
 }
 
 //-----------------------------------------------------------------------------
@@ -544,7 +556,7 @@ void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned cha
   {
     if (strcmp(type, "hex") == 0)
     {
-      printf("Hex at %d: 0x%x\n", number, data_segment[number]);
+      printf("Hex at %d: %x\n", number, data_segment[number]);
     }
     else if (strcmp(type, "int") == 0)
     {
@@ -596,6 +608,7 @@ void show(int size, char* program_memory,  int current_position, Boolean program
     {
       putchar(program_memory[step_counter]);
     }
+    printf("\n");
   }
   else
   {
