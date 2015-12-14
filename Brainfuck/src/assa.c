@@ -60,10 +60,10 @@ int main (int argc, char *argv[])
 {
   char character = NULL;
   char* eval_program_memory = NULL;
-  unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
-  char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
-  int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
-  char* user_input= calloc(1, 1024 * sizeof(char)); //TODO
+  unsigned char* data_segment = calloc(1024, 1024 * sizeof(char));
+  char* program_memory = calloc(1024, 1024 * sizeof(char));
+  int* break_points = calloc(1024, 1024 * sizeof(int));
+  char* user_input= malloc(2 * sizeof(char));
   int action_input_counter = 0;
   int current_position = 0;
   int segment_position = 0;
@@ -80,7 +80,9 @@ int main (int argc, char *argv[])
       printf("esp> ");
       while((character = getchar()) != '\n' && character != EOF)
       {
-        user_input=realloc(user_input, 1024 * sizeof(char)); //TODO
+        user_input[action_input_counter] = character;
+        action_input_counter++;
+        user_input=realloc(user_input, strlen(user_input) + 1 * sizeof(char));
         if(user_input == NULL)
         {
           free(user_input);
@@ -88,9 +90,9 @@ int main (int argc, char *argv[])
           printf(ERROR_OUT_OF_MEMORY);
           return OUT_OF_MEMORY;
         }
-        user_input[action_input_counter++]=character;
       }
-      user_input[action_input_counter++]='\0';
+      action_input_counter++;
+      user_input[action_input_counter]='\0';
       int user_input_length = strlen(user_input);
       char delimiter[] = " ";
       char* action = strtok(user_input, delimiter);
@@ -137,7 +139,6 @@ int main (int argc, char *argv[])
                                             break_points, current_position,
                                             endposition, run_instructions);
     	int instructions_length = strlen(program_memory);
-    	printf("I: %i      %d", instructions_length, current_position);
     	if (current_position > instructions_length &&
         		current_position != 0) {
             run_instructions = FALSE;
@@ -181,7 +182,6 @@ int main (int argc, char *argv[])
                                 data_segment, break_points, current_position,
                                 is_program_loaded);
     	int instructions_length = strlen(program_memory);
-    	printf("I: %i      %d", instructions_length, current_position);
     	if (current_position > instructions_length &&
     		current_position != 0) {
             run_instructions = FALSE;
@@ -233,7 +233,7 @@ int main (int argc, char *argv[])
         else if (first_parameter != NULL && second_parameter != NULL)
         {
           char compare_string[] = "0x";
-          //compare the two first characters
+          //compare the first two characters
           if(strncmp(second_parameter, compare_string, 2) != 0)
           {
             change(atoi(first_parameter), second_parameter,
@@ -259,12 +259,10 @@ int main (int argc, char *argv[])
     free(user_input);
     user_input = NULL;
   }
-  
   else if(argc == 2)
   {
     printf(WRONG_PARAMETER_COUNT);
   }
-  
   else if(argc >= 3)
   {
     if(strcmp(argv[1], "-e") == 0)
@@ -328,16 +326,19 @@ int loadBrainfuckFile(char *filename, char* program_memory)
   {
     int program_memory_size = sizeof(char)/sizeof(program_memory[0]);
     int program_memory_size_limit = 1023;
+
     while((character = fgetc(file_to_read)) != EOF)
     {
       if(isBrainfuckCommand(character))
       {
         program_memory[character_counter++]=character;
+
         if (program_memory_size == program_memory_size_limit)
         {
           program_memory_size_limit *= 2;
           program_memory=realloc(program_memory, 2*program_memory_size);
         }
+
         if(program_memory == NULL)
         {
           free(program_memory);
@@ -347,6 +348,7 @@ int loadBrainfuckFile(char *filename, char* program_memory)
         }
       }
     }
+
     fclose(file_to_read);
     return_value =  PROGRAM_SUCCESSFULLY_LOADED;
   }
