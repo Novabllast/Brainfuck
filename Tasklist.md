@@ -9,8 +9,8 @@ Manfred
 
 
 Anna
-- [ ] show [size]
-- [ ] change [number] [hex_byte]
+- [x] show [size]
+- [x] change [number] [hex_byte]
 - [ ] memory [number] [type]
 
 
