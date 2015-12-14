@@ -7,7 +7,9 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 07.12.2015 (by Manfred Böck)
+// Latest Changes: 12.12.2015 (by Patrick Struger) (just watched code
+// and some playing around with your beautiful code @Manfred Böck)
+// and a little bit codingstandard ;)
 //-----------------------------------------------------------------------------
 //
 
@@ -42,6 +44,9 @@ void change(int number, char* hex_byte, Boolean program_loaded);
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/hw.bf
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/bottles.bf
 
+// C:/Users/Patrick/Documents/GitHub/Brainfuck/Brainfuck/src/hw.bf
+// C:/Users/Patrick/Documents/GitHub/Brainfuck/Brainfuck/src/bottles.bf
+
 int main (int argc, char *argv[])
 {
   char character = NULL;
@@ -54,163 +59,182 @@ int main (int argc, char *argv[])
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
 
-  if(argc == 1)                        //Interactiv Debug Mode
+  //Interactive Debug Mode
+  if(argc == 1)
+  {
+    while (!close_program)
     {
-      while (!close_program) {
-        printf("esp> ");
-        while((character = getchar()) != '\n' && character != EOF)
+      printf("esp> ");
+      while((character = getchar()) != '\n' && character != EOF)
+      {
+        user_input=realloc(user_input, 1024 * sizeof(char)); //TODO
+        if(user_input == NULL)
         {
-          user_input=realloc(user_input, 1024 * sizeof(char)); //TODO
-          if(user_input == NULL)
-          {
-            free(user_input);
-            user_input = NULL;
-            printf("Error: Out of memory!\n");
-            return OUT_OF_MEMORY;
-          }
-          user_input[action_input_counter++]=character;
+          free(user_input);
+          user_input = NULL;
+          printf("Error: Out of memory!\n");
+          return OUT_OF_MEMORY;
         }
-        user_input[action_input_counter++]='\0';
-        int user_input_length = strlen(user_input);
-        char delimiter[] = " ";
-        char* action = strtok(user_input, delimiter);
-        char* first_parameter = NULL;
-        char* second_parameter = NULL;
-
-        if (strcmp(action, "load") == 0)
-        {
-          first_parameter = strtok(NULL, delimiter);
-		  if (!first_parameter) {
-	          printf("[ERR] usage: load brainfuck_filnename\n");//TODO ist diese Ausgabe erlaubt?
-		  } else {
-            int has_succeeded = -1;
-            has_succeeded = loadBrainfuckFile(first_parameter, program_memory);
-            switch (has_succeeded) {
-			  case OUT_OF_MEMORY:
-				  return OUT_OF_MEMORY;
-				  break;
-			  case READING_THE_FILE_FAILED:
-				  break;
-			  case PROGRAM_SUCCESSFULLY_LOADED:
-				  is_program_loaded = TRUE;
-				  data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
-				  break;
-			  default:
-				  break;
-		    }
-		  }
-        }
-        else if (strcmp(action, "run") == 0)
-        {
-  		  int endposition = strlen(program_memory);
-          runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
-          is_program_loaded = FALSE;
-        }
-        else if (strcmp(action, "eval") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL) {
-			  evalBrainfuckString(first_parameter);
-		  }
-        }
-        else if (strcmp(action, "break") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL) {
-            setBreakPoint(atoi(first_parameter), break_points, is_program_loaded);
-		  }
-        }
-        else if(strcmp(action, "step") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-		  if(first_parameter == NULL) {
-		    first_parameter = "1";
-		  }
-          current_position = step(atoi(first_parameter),program_memory, data_segment, break_points, current_position, is_program_loaded);
-        }
-        else if (strcmp(action, "memory") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-          second_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL && second_parameter != NULL) {
-            memory(atoi(first_parameter), second_parameter, is_program_loaded);
-		  }
-        }
-        else if (strcmp(action, "show") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-		  if (first_parameter == NULL) {
-            first_parameter = "10";
-		  }
-		  show(atoi(first_parameter), program_memory , current_position, is_program_loaded);
-        }
-        else if (strcmp(action, "change") == 0)
-        {
-          first_parameter = strtok(NULL, " ");
-          second_parameter = strtok(NULL, " ");
-		  if (first_parameter != NULL && second_parameter != NULL) {
-            change(atoi(first_parameter), second_parameter, is_program_loaded);
-		  }
-        }
-        else if (strcmp(action, "quit") == 0)
-        {
-          printf("Bye.\n");
-          close_program = TRUE;
-    }
-        else if(strcmp(user_input, "EOF") == 0){
-          close_program = TRUE;
-        } else{
-          printf("Command: %s is not available.\n"
-                 "Available Commands: "
-                 "load, run, eval, break, step, "
-                 "memory, show, change, quit & EOF\n", user_input);
-        }
-        memset(user_input,'\0',user_input_length);
-        action_input_counter = 0;
+        user_input[action_input_counter++]=character;
       }
-      free(user_input);
-      user_input = NULL;
-    }
-    else if(argc == 2)
-    {
-      printf("[ERR] wrong parameter count\n");
-    }
-    else if(argc >= 3)
-    {
-        if(strcmp(argv[1], "-e") == 0)
+      user_input[action_input_counter++]='\0';
+      int user_input_length = strlen(user_input);
+      char delimiter[] = " ";
+      char* action = strtok(user_input, delimiter);
+      char* first_parameter = NULL;
+      char* second_parameter = NULL;
+
+      if (strcmp(action, "load") == 0)
+      {
+        first_parameter = strtok(NULL, delimiter);
+        if (!first_parameter)
         {
-          char* filename = argv[2];
-          int has_succeeded = -1;
-		  has_succeeded = loadBrainfuckFile(filename, program_memory);
-		  switch (has_succeeded) {
-		    case OUT_OF_MEMORY:
-			  return OUT_OF_MEMORY;
-			  break;
-		    case READING_THE_FILE_FAILED:
-			  return READING_THE_FILE_FAILED;
-			  break;
-		    case PROGRAM_SUCCESSFULLY_LOADED:
-			  is_program_loaded = TRUE;
-			  break;
-		    default:
-			  break;
-		  }
-  		  int endposition = strlen(program_memory);
-      	  current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+          printf("[ERR] usage: load brainfuck_filnename\n");
+          //TODO ist diese Ausgabe erlaubt?
         }
         else
         {
-          printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
-          return INCORRECT_PROGRAM_CALL;
+          int has_succeeded = -1;
+          has_succeeded = loadBrainfuckFile(first_parameter, program_memory);
+          switch (has_succeeded)
+          {
+            case OUT_OF_MEMORY:
+              return OUT_OF_MEMORY;
+              break;
+            case READING_THE_FILE_FAILED:
+              break;
+            case PROGRAM_SUCCESSFULLY_LOADED:
+              is_program_loaded = TRUE;
+              data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
+              break;
+            default:
+              break;
+          }
         }
+      }
+      else if (strcmp(action, "run") == 0)
+      {
+        int endposition = strlen(program_memory);
+        runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+        is_program_loaded = FALSE;
+      }
+      else if (strcmp(action, "eval") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        if (first_parameter != NULL)
+        {
+          evalBrainfuckString(first_parameter);
+        }
+      }
+      else if (strcmp(action, "break") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        if (first_parameter != NULL)
+        {
+          setBreakPoint(atoi(first_parameter), break_points, is_program_loaded);
+        }
+      }
+      else if(strcmp(action, "step") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        if(first_parameter == NULL)
+        {
+          first_parameter = "1";
+        }
+        current_position = step(atoi(first_parameter),program_memory, data_segment, break_points, current_position, is_program_loaded);
+      }
+      else if (strcmp(action, "memory") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        second_parameter = strtok(NULL, " ");
+        if (first_parameter != NULL && second_parameter != NULL)
+        {
+          memory(atoi(first_parameter), second_parameter, is_program_loaded);
+        }
+      }
+      else if (strcmp(action, "show") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        if (first_parameter == NULL)
+        {
+          first_parameter = "10";
+        }
+        show(atoi(first_parameter), program_memory , current_position, is_program_loaded);
+      }
+      else if (strcmp(action, "change") == 0)
+      {
+        first_parameter = strtok(NULL, " ");
+        second_parameter = strtok(NULL, " ");
+        if (first_parameter != NULL && second_parameter != NULL)
+        {
+          change(atoi(first_parameter), second_parameter, is_program_loaded);
+        }
+      }
+      else if (strcmp(action, "quit") == 0)
+      {
+        printf("Bye.\n");
+        close_program = TRUE;
+      }
+      else if(strcmp(user_input, "EOF") == 0)
+      {
+        close_program = TRUE;
+      }
+      else
+      {
+        printf("Command: %s is not available.\n"
+           "Available Commands: "
+           "load, run, eval, break, step, "
+           "memory, show, change, quit & EOF\n", user_input);
+      }
+      memset(user_input,'\0',user_input_length);
+      action_input_counter = 0;
     }
-    free(program_memory);
-    program_memory = NULL;
-    free(data_segment);
-    data_segment = NULL;
-    free(break_points);
-    break_points = NULL;
-    return 0;
+    free(user_input);
+    user_input = NULL;
+  }
+  
+  else if(argc == 2)
+  {
+    printf("[ERR] wrong parameter count\n");
+  }
+  
+  else if(argc >= 3)
+  {
+      if(strcmp(argv[1], "-e") == 0)
+      {
+        char* filename = argv[2];
+        int has_succeeded = -1;
+        has_succeeded = loadBrainfuckFile(filename, program_memory);
+        switch (has_succeeded)
+        {
+          case OUT_OF_MEMORY:
+            return OUT_OF_MEMORY;
+            break;
+          case READING_THE_FILE_FAILED:
+            return READING_THE_FILE_FAILED;
+            break;
+          case PROGRAM_SUCCESSFULLY_LOADED:
+            is_program_loaded = TRUE;
+            break;
+          default:
+            break;
+        }
+  		  int endposition = strlen(program_memory);
+      	current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
+      }
+      else
+      {
+        printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
+        return INCORRECT_PROGRAM_CALL;
+      }
+  }
+  free(program_memory);
+  program_memory = NULL;
+  free(data_segment);
+  data_segment = NULL;
+  free(break_points);
+  break_points = NULL;
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -221,11 +245,12 @@ int main (int argc, char *argv[])
 ///
 /// @return char* filename extension
 //
-char* get_filename_ext(char *filename) {
-    char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename)
-      return "";
-    return dot + 1;
+char* get_filename_ext(char *filename)
+{
+  char *dot = strrchr(filename, '.');
+  if(!dot || dot == filename)
+    return "";
+  return dot + 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -236,7 +261,8 @@ char* get_filename_ext(char *filename) {
 ///
 /// @return int 4, 2, 100
 //
-int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
+int loadBrainfuckFile(char *filename, unsigned char* program_memory)
+{
   int character_counter = 0;
   char character;
   int return_value = READING_THE_FILE_FAILED;
@@ -256,25 +282,27 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
       int program_memory_size_limit = 1023;
       while((character = fgetc(file_to_read)) != EOF)
       {
-        if(isBrainfuckCommand(character)) {
+        if(isBrainfuckCommand(character))
+        {
           program_memory[character_counter++]=character;
-		  if (program_memory_size == program_memory_size_limit) { //TODO keine ahnung wie die abfrage lauten soll
-          //printf("i: %i D: %i", program_memory_size, strlen((const char*)program_memory));
-			  program_memory_size_limit *= 2;
-			  program_memory=realloc(program_memory, 2*program_memory_size);
-		  }
+          if (program_memory_size == program_memory_size_limit)
+          { //TODO keine ahnung wie die abfrage lauten soll
+            //printf("i: %i D: %i", program_memory_size, strlen((const char*)program_memory));
+            program_memory_size_limit *= 2;
+            program_memory=realloc(program_memory, 2*program_memory_size);
+          }
           if(program_memory == NULL)
           {
-			free(program_memory);
-			program_memory = NULL;
-			printf("Error: Out of memory!\n");
-			return_value =  OUT_OF_MEMORY;
-		  }
-		}
-	  }
-	}
-	fclose(file_to_read);
-	return_value =  PROGRAM_SUCCESSFULLY_LOADED;
+            free(program_memory);
+            program_memory = NULL;
+            printf("Error: Out of memory!\n");
+            return_value =  OUT_OF_MEMORY;
+          }
+        }
+      }
+    }
+    fclose(file_to_read);
+    return_value =  PROGRAM_SUCCESSFULLY_LOADED;
   }
   return return_value;
 }
@@ -287,92 +315,95 @@ int loadBrainfuckFile(char *filename, unsigned char* program_memory) {
 /// @param program_loaded
 //
 int runBrainfuckFile(unsigned char* program_memory,
-		              unsigned char* data_segment,
-					  int* break_points,
-		              int startposition, int endposition,
-					  Boolean program_loaded)
+                     unsigned char* data_segment,
+                     int* break_points,
+                     int startposition, int endposition,
+                     Boolean program_loaded)
 {
 	printf("%d: %d: \n", startposition, endposition);
 	int currrent_position = 0;
 	if (program_loaded)
-    {
-	  unsigned char brainfuck_character = NULL;      // current char to be working on
+  {
+	  // current char to be working on
+    unsigned char brainfuck_character = NULL;
 	  int current_cell_index = 0;
-	  int bracket_counter = 0;     // to find paired brackets
+	  // to find paired brackets
+    int bracket_counter = 0;
 	  for(currrent_position = startposition;
 		  currrent_position <= endposition; currrent_position++)
 	  {
-		if (break_points[currrent_position] != 1) {
-			brainfuck_character = program_memory[currrent_position];
-			//interpret brainfuck
-			switch (brainfuck_character){
-			  case '>': // increment pointer
-				  current_cell_index++;
-				  ++data_segment;
-				break;
-			  case '<': // decrement pointer
-				//if i < 0 ERROR: tried to access invalid => just ignore it
-				if(current_cell_index > 0)
-				{
-					current_cell_index--;
-				  --data_segment;
-				}
-				break;
-			  case '+': // increment pointer value
-				  ++*data_segment;
-				break;
-			  case '-': // decrement pointer value
-				  --*data_segment;
-				break;
-			  case '.': // output pointer value
-				putchar(*data_segment);
-				break;
-			  case ',': // read in value
-				  *data_segment = getchar();
-				break;
-			  case '[': // start bracket loop
-				if(!*data_segment)
-				{
-				  bracket_counter++;
-				  while(bracket_counter)
-				  {
-					currrent_position++;
-					if(program_memory[currrent_position] == ']')
-					  bracket_counter--;
-					else if(program_memory[currrent_position] == '[')
-					  bracket_counter++;
-				  }
-				}
-				break;
-			  case ']': // end bracket loop
-				if(*data_segment)
-				{
-				  bracket_counter++;
-				  while(bracket_counter)
-				  {
-					currrent_position--;
-					if(program_memory[currrent_position] == '[')
-					  bracket_counter--;
-					else if(program_memory[currrent_position] == ']')
-					  bracket_counter++;
-				  }
-				}
-				break;
-			  default:
-				  break;
-			}
-		}
-		else
-		{
-			break_points[currrent_position] = 0;
-
-		}
-	  }
+      if (break_points[currrent_position] != 1)
+      {
+        brainfuck_character = program_memory[currrent_position];
+        //interpret brainfuck
+        switch (brainfuck_character)
+        {
+          case '>': // increment pointer
+            current_cell_index++;
+            ++data_segment;
+            break;
+          case '<': // decrement pointer
+            //if i < 0 ERROR: tried to access invalid => just ignore it
+            if(current_cell_index > 0)
+            {
+              current_cell_index--;
+              --data_segment;
+            }
+            break;
+          case '+': // increment pointer value
+            ++*data_segment;
+            break;
+          case '-': // decrement pointer value
+            --*data_segment;
+            break;
+          case '.': // output pointer value
+            putchar(*data_segment);
+            break;
+          case ',': // read in value
+            *data_segment = getchar();
+            break;
+          case '[': // start bracket loop
+            if(!*data_segment)
+            {
+              bracket_counter++;
+              while(bracket_counter)
+              {
+                currrent_position++;
+                if(program_memory[currrent_position] == ']')
+                  bracket_counter--;
+                else if(program_memory[currrent_position] == '[')
+                  bracket_counter++;
+              }
+            }
+            break;
+          case ']': // end bracket loop
+            if(*data_segment)
+            {
+              bracket_counter++;
+              while(bracket_counter)
+              {
+                currrent_position--;
+                if(program_memory[currrent_position] == '[')
+                  bracket_counter--;
+                else if(program_memory[currrent_position] == ']')
+                  bracket_counter++;
+              }
+            }
+            break;
+          default:
+            break;
+        }
+      }
+      else
+      {
+        break_points[currrent_position] = 0;
+      }
     }
-    else
-    {
-      printf("[ERR] no program loaded\n");
-    }
+  }
+  else
+  {
+    printf("[ERR] no program loaded\n");
+  }
 	return currrent_position;
 }
 
@@ -435,7 +466,7 @@ void setBreakPoint(int program_counter, int* break_points, Boolean program_loade
   }
   else
   {
-	printf("[ERR] no program loaded\n");
+    printf("[ERR] no program loaded\n");
   }
 }
 
@@ -473,7 +504,7 @@ void memory(int number, char* type, Boolean program_loaded)
 	  }
 	  else
 	  {
-		printf("[ERR] no program loaded\n");
+      printf("[ERR] no program loaded\n");
 	  }
 }
 
@@ -489,15 +520,16 @@ void show(int size, unsigned char* program_memory,  int current_position, Boolea
   int step_counter = 0;
   if (program_loaded)
   {
-	int endposition = size + current_position -1;
-	for (step_counter =  current_position; step_counter < endposition; step_counter++) {
-	  putchar(program_memory[step_counter]);
-	}
-	printf("\n");
+    int endposition = size + current_position -1;
+    for (step_counter =  current_position; step_counter < endposition; step_counter++)
+    {
+      putchar(program_memory[step_counter]);
+    }
+    printf("\n");
   }
   else
   {
-	printf("[ERR] no program loaded\n");
+    printf("[ERR] no program loaded\n");
   }
 }
 
@@ -515,6 +547,6 @@ void change(int number, char* hex_byte, Boolean program_loaded)
 	  }
 	  else
 	  {
-		printf("[ERR] no program loaded\n");
+      printf("[ERR] no program loaded\n");
 	  }
 }
