@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 14.12.2015 (by Patrick Struger)
+// Latest Changes: 13.12.2015 (by Patrick Struger)
 //-----------------------------------------------------------------------------
 //
 
@@ -25,7 +25,7 @@ typedef enum _Boolean_
 int loadBrainfuckFile(char* filename, char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition, Boolean program_loaded);
-int evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points);
+int eval(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points, Boolean program_loaded);
 int step(int number, char* program_memory, unsigned char* data_segment, int* break_points, int current_position, Boolean program_loaded);
 void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned char* data_segment);
@@ -133,7 +133,7 @@ int main (int argc, char *argv[])
         first_parameter = strtok(NULL, " ");
         if (first_parameter != NULL)
         {
-          segment_position = evalBrainfuckString(first_parameter, eval_program_memory, data_segment, current_position, segment_position, break_points);
+          segment_position = eval(first_parameter, eval_program_memory, data_segment, current_position, segment_position, break_points);
           if(segment_position >= 0)
           {
             is_data_segment_loaded = TRUE;
@@ -193,7 +193,7 @@ int main (int argc, char *argv[])
         second_parameter = strtok(NULL, " ");
         if (first_parameter == NULL && second_parameter == NULL)
         {
-          change(current_position, "00", is_data_segment_loaded, data_segment);
+          change(segment_position, "00", is_data_segment_loaded, data_segment);
         }
         else if (first_parameter != NULL && second_parameter != NULL)
         {
@@ -453,42 +453,43 @@ Boolean isBrainfuckCommand(char character_to_check)
 ///
 /// @param
 //
-int evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points)
+int eval(char* brainfuckstring, char* eval_program_memory, unsigned char* data_segment, int current_position, int seg_position, int* break_points)
 {
-  int position = seg_position;
-  if(strlen(brainfuckstring) < 80)
+  int length = strlen(brainfuckstring);
+  if(length < 80)
   {
-    int string_index;
-    int str_length = strlen(brainfuckstring);
+    int bf_size = 2;
+    int bf_index = 0;
+    int string_index = 0;
+    if(eval_program_memory == NULL)
+    {
+      eval_program_memory = malloc(bf_size * sizeof(char));
+    }
     //check if it is a brainfuck command
     for(string_index = 0; string_index < strlen(brainfuckstring); string_index++)
     {
-      if(!isBrainfuckCommand(brainfuckstring[string_index]))
+      if(isBrainfuckCommand(brainfuckstring[string_index]))
       {
-        return -1;
-      }
-      else
-      {
-        if(strcmp(brainfuckstring[string_index], ">") == 0)
+        eval_program_memory[bf_index] = brainfuckstring[string_index];
+        bf_size++;
+        bf_index++;
+        eval_program_memory = realloc(eval_program_memory, bf_size * sizeof(char));
+        switch(brainfuckstring[string_index])
         {
-          position++;
-        }
-        else if(strcmp(brainfuckstring[string_index], "<") == 0)
-        {
-          if(position > 0)
-          {
-            position--;
-          }
+          case '>':
+            seg_position++;
+            break;
+          case '<':
+            if(seg_position > 0)
+            {
+              seg_position--;
+            }
+            break;
+          default:
+            break;
         }
       }
     }
-    printf("%d", position);
-    if(eval_program_memory == NULL)
-    {
-      eval_program_memory = calloc(str_length + 1, (str_length + 1) * sizeof(char));
-    }
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
-    strcpy(eval_program_memory, brainfuckstring);
     int endposition = strlen(eval_program_memory);
     runBrainfuckFile(eval_program_memory, data_segment, break_points, current_position, endposition, TRUE);
     free(eval_program_memory);
@@ -498,7 +499,7 @@ int evalBrainfuckString(char* brainfuckstring, char* eval_program_memory, unsign
   {
     return -1;
   }
-  return position;
+  return seg_position;
 }
 
 //-----------------------------------------------------------------------------
