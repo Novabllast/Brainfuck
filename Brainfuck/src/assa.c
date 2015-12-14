@@ -1,20 +1,19 @@
 //-----------------------------------------------------------------------------
 // assa.c
 //
-// C Programm, welches Speicherverwaltung und Strings behandelt
+// C program which interprets and debugs "Brainfuck"-Code.
 //
 // Group: 13031 study assistant Angela Promitzer
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 14.12.2015 (by Patrick Struger)
+// Latest Changes: 14.12.2015 (by Manfred Böck)
 //-----------------------------------------------------------------------------
 //
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 typedef enum _Boolean_
 {
@@ -37,6 +36,9 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned
 #define PARSING_ON_INPUT_FAILED 3
 #define READING_THE_FILE_FAILED 4
 #define PROGRAM_SUCCESSFULLY_LOADED 100
+#define NO_PROGRAM_LOADED "[ERR] no program loaded\n"
+#define WRONG_PARAMETER_COUNT "[ERR] wrong parameter count\n"
+#define READING_THE_FILE_FAILED "[ERR] reading the file failed\n"
 
 // -e
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/hw.bf
@@ -48,7 +50,7 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned
 int main (int argc, char *argv[])
 {
   char character = NULL;
-  char* eval_program_memory = NULL; //TODO (Newsgroup)
+  char* eval_program_memory = NULL;
   unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
   char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
   int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
@@ -223,7 +225,7 @@ int main (int argc, char *argv[])
   
   else if(argc == 2)
   {
-    printf("[ERR] wrong parameter count\n");
+    printf(WRONG_PARAMETER_COUNT);
   }
   
   else if(argc >= 3)
@@ -282,7 +284,7 @@ int loadBrainfuckFile(char *filename, char* program_memory)
   FILE *file_to_read = fopen(filename, "r");
   if (file_to_read == 0)
   {
-    printf("[ERR] reading the file failed\n");
+    printf(READING_THE_FILE_FAILED);
     return_value = READING_THE_FILE_FAILED;
   }
   else
@@ -412,7 +414,7 @@ int runBrainfuckFile(char* program_memory,
   }
   else
   {
-    printf("[ERR] no program loaded\n");
+    printf(NO_PROGRAM_LOADED);
   }
 	return currrent_position;
 }
@@ -519,7 +521,7 @@ void setBreakPoint(int program_counter, int* break_points, Boolean program_loade
   }
   else
   {
-    printf("[ERR] no program loaded\n");
+    printf(NO_PROGRAM_LOADED);
   }
 }
 
@@ -538,7 +540,7 @@ int step(int number, char* program_memory, unsigned char* data_segment, int* bre
   }
   else
   {
-    printf("[ERR] no program loaded\n");
+    printf(NO_PROGRAM_LOADED);
   }
   return current_position;
 }
@@ -549,7 +551,6 @@ int step(int number, char* program_memory, unsigned char* data_segment, int* bre
 ///
 /// @param
 //
-
 void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned char* data_segment)
 {
   if (is_data_segment_loaded)
@@ -587,17 +588,20 @@ void memory(int number, char* type, Boolean is_data_segment_loaded, unsigned cha
   }
   else
   {
-    printf("[ERR] no program loaded\n");
+    printf(NO_PROGRAM_LOADED);
   }
 }
 
 //-----------------------------------------------------------------------------
 ///
-/// This is an example header comment. Copypaste and adapt it!//TODO
+/// Shows the next @size instructions from the program memory,
+//  or so many until the program ends.
 ///
-/// @param
+/// @param size The number of instructions to be shown
+/// @param program_memory
+/// @param current_position
+/// @param program_loaded
 //
-
 void show(int size, char* program_memory,  int current_position, Boolean program_loaded)
 {
   int step_counter = 0;
@@ -612,15 +616,19 @@ void show(int size, char* program_memory,  int current_position, Boolean program
   }
   else
   {
-    printf("[ERR] no program loaded\n");
+    printf(NO_PROGRAM_LOADED);
   }
 }
 
 //-----------------------------------------------------------------------------
 ///
-/// This is an example header comment. Copypaste and adapt it!//TODO
+/// Changes the byte to a hex byte at the given position.
 ///
-/// @param
+/// @param number Position of the byte to change.
+/// @param hex_byte The new Value at the given position.
+/// @param is_data_segment_loaded Boolean whether
+//         data_segment is initialized or not.
+/// @param data_segment Contains the data which should be changed.
 //
 void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned char* data_segment)
 {
@@ -633,6 +641,7 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned
 	  }
 	  else
 	  {
-      printf("[ERR] no program loaded\n");
+      printf(NO_PROGRAM_LOADED);
 	  }
 }
+
