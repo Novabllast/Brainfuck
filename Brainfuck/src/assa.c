@@ -113,6 +113,7 @@ int main (int argc, char *argv[])
               printf(READING_THE_FILE_FAILED_MESSAGE);
               break;
             case PROGRAM_SUCCESSFULLY_LOADED:
+              current_position = 0;
               run_instructions = TRUE;
               is_program_loaded = TRUE;
               is_data_segment_loaded = TRUE;
