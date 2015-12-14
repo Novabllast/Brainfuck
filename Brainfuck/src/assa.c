@@ -7,9 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 12.12.2015 (by Patrick Struger) (just watched code
-// and some playing around with your beautiful code @Manfred Böck)
-// and a little bit codingstandard ;)
+// Latest Changes: 12.12.2015 (by Patrick Struger)
 //-----------------------------------------------------------------------------
 //
 
