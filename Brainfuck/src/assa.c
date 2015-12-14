@@ -21,7 +21,6 @@ typedef enum _Boolean_
       TRUE = 1
 } Boolean;
 
-char *get_filename_ext(char* filename);
 int loadBrainfuckFile(char* filename, char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment, int* break_points, int startposition, int endposition,Boolean program_loaded);
@@ -42,14 +41,14 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded, unsigned
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/hw.bf
 // /home/manfred/workspace/git/Brainfuck/Brainfuck/src/bottles.bf
 
-// C:/Users/Patrick/Documents/GitHub/Brainfuck/Brainfuck/src/hw.bf
-// C:/Users/Patrick/Documents/GitHub/Brainfuck/Brainfuck/src/bottles.bf
+// /home/anonymus/C_projects/Hauptbeispiel/Brainfuck/Brainfuck_v2/src/hw.bf
+// /home/anonymus/C_projects/Hauptbeispiel/Brainfuck/Brainfuck_v2/src/bottles.bf
 
 int main (int argc, char *argv[])
 {
   char character = NULL;
   char* eval_program_memory = NULL; //TODO (Newsgroup)
-  unsigned char* data_segment = NULL; //TODO
+  unsigned char* data_segment = calloc(1024, 1024 * sizeof(char)); //TODO
   char* program_memory = calloc(1024, 1024 * sizeof(char)); //TODO
   int* break_points = calloc(1024, 1024 * sizeof(int)); //TODO
   char* user_input= calloc(1, 1024 * sizeof(char));
@@ -58,6 +57,7 @@ int main (int argc, char *argv[])
   Boolean is_program_loaded = FALSE;
   Boolean close_program = FALSE;
   Boolean is_data_segment_loaded = FALSE;
+  Boolean run_instructions = TRUE;
 
   //Interactive Debug Mode
   if(argc == 1)
@@ -104,6 +104,7 @@ int main (int argc, char *argv[])
             case READING_THE_FILE_FAILED:
               break;
             case PROGRAM_SUCCESSFULLY_LOADED:
+              run_instructions = TRUE;
               is_program_loaded = TRUE;
               is_data_segment_loaded = TRUE;
               //Reset data_segment for new program
@@ -122,8 +123,8 @@ int main (int argc, char *argv[])
       else if (strcmp(action, "run") == 0)
       {
         int endposition = strlen(program_memory);
-        runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, is_program_loaded);
-        is_program_loaded = FALSE;
+        current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, endposition, run_instructions);
+        run_instructions = FALSE;
       }
       else if (strcmp(action, "eval") == 0)
       {
@@ -131,18 +132,9 @@ int main (int argc, char *argv[])
         if (first_parameter != NULL)
         {
           Boolean check = FALSE;
-          if(data_segment == NULL)
-          {
-            data_segment = calloc(1024, 1024 * sizeof(char));
-          }
           check = evalBrainfuckString(first_parameter, eval_program_memory, data_segment, current_position, break_points);
           if(check)
           {
-            is_data_segment_loaded = TRUE;
-          }
-          if(data_segment == NULL)
-          {
-            printf("Segment is empty!\n");
             is_data_segment_loaded = TRUE;
           }
         }
@@ -192,6 +184,7 @@ int main (int argc, char *argv[])
         {
           first_parameter = "10";
         }
+        printf("%d", current_position);
         show(atoi(first_parameter), program_memory , current_position, is_program_loaded);
       }
       else if (strcmp(action, "change") == 0)
@@ -278,63 +271,43 @@ int main (int argc, char *argv[])
 ///
 /// This is an example header comment. Copypaste and adapt it! //TODO
 ///
-/// @param filename The name of the file whose extension you want to know.
-///
-/// @return char* filename extension
-//
-char* get_filename_ext(char *filename)
-{
-  char *dot = strrchr(filename, '.');
-  if(!dot || dot == filename)
-    return "";
-  return dot + 1;
-}
-
-//-----------------------------------------------------------------------------
-///
-/// This is an example header comment. Copypaste and adapt it! //TODO
-///
 /// @param filename
 ///
 /// @return int 4, 2, 100
 //
 int loadBrainfuckFile(char *filename, char* program_memory)
 {
-  int character_counter = 0;
   char character;
+  int character_counter = 0;
   int return_value = READING_THE_FILE_FAILED;
 
-  //check if the file is a Brainfuck file
-  if (strcmp(get_filename_ext(filename), "bf") == 0)
+  FILE *file_to_read = fopen(filename, "r");
+  if (file_to_read == 0)
   {
-    FILE *file_to_read = fopen(filename, "r");
-    if (file_to_read == 0)
+    printf("[ERR] reading the file failed\n");
+    return_value = READING_THE_FILE_FAILED;
+  }
+  else
+  {
+    int program_memory_size = sizeof(char)/sizeof(program_memory[0]);
+    int program_memory_size_limit = 1023;
+    while((character = fgetc(file_to_read)) != EOF)
     {
-      printf("[ERR] reading the file failed\n");
-      return_value = READING_THE_FILE_FAILED;
-    }
-    else
-    {
-      int program_memory_size = sizeof(char)/sizeof(program_memory[0]);
-      int program_memory_size_limit = 1023;
-      while((character = fgetc(file_to_read)) != EOF)
+      if(isBrainfuckCommand(character))
       {
-        if(isBrainfuckCommand(character))
+        program_memory[character_counter++]=character;
+        if (program_memory_size == program_memory_size_limit)
+        { //TODO keine ahnung wie die abfrage lauten soll
+          //printf("i: %i D: %i", program_memory_size, strlen((const char*)program_memory));
+          program_memory_size_limit *= 2;
+          program_memory=realloc(program_memory, 2*program_memory_size);
+        }
+        if(program_memory == NULL)
         {
-          program_memory[character_counter++]=character;
-          if (program_memory_size == program_memory_size_limit)
-          { //TODO keine ahnung wie die abfrage lauten soll
-            //printf("i: %i D: %i", program_memory_size, strlen((const char*)program_memory));
-            program_memory_size_limit *= 2;
-            program_memory=realloc(program_memory, 2*program_memory_size);
-          }
-          if(program_memory == NULL)
-          {
-            free(program_memory);
-            program_memory = NULL;
-            printf("Error: Out of memory!\n");
-            return_value =  OUT_OF_MEMORY;
-          }
+          free(program_memory);
+          program_memory = NULL;
+          printf("Error: Out of memory!\n");
+          return_value =  OUT_OF_MEMORY;
         }
       }
     }
@@ -355,19 +328,21 @@ int runBrainfuckFile(char* program_memory,
                      unsigned char* data_segment,
                      int* break_points,
                      int startposition, int endposition,
-                     Boolean program_loaded)
+                     Boolean run_instructions)
 {
-	printf("%d: %d: \n", startposition, endposition);
+  //Muss noch geloescht werden
+  printf("%d: %d: \n", startposition, endposition);
 	int currrent_position = 0;
-	if (program_loaded)
+	if (run_instructions)
 	{
-	  // current char to be working on
+	  Boolean break_point_detected = FALSE;
+    // current char to be working on
 	  unsigned char brainfuck_character = NULL;
 	  int current_cell_index = 0;
 	  // to find paired brackets
     int bracket_counter = 0;
-	  for(currrent_position = startposition;
-		  currrent_position <= endposition; currrent_position++)
+	  for(currrent_position = startposition; !break_point_detected &&
+        currrent_position <= endposition; currrent_position++)
 	  {
 	    if (break_points[currrent_position] != 1)
       {
@@ -433,7 +408,9 @@ int runBrainfuckFile(char* program_memory,
       }
       else
       {
+        currrent_position--;
         break_points[currrent_position] = 0;
+        break_point_detected = TRUE;
       }
     }
   }
@@ -544,6 +521,7 @@ int step(int number, char* program_memory, unsigned char* data_segment, int* bre
 {
   if (program_loaded)
   {
+    number--;
     current_position = runBrainfuckFile(program_memory, data_segment, break_points, current_position, number, program_loaded);
   }
   else
@@ -613,12 +591,11 @@ void show(int size, char* program_memory,  int current_position, Boolean program
   int step_counter = 0;
   if (program_loaded)
   {
-    int endposition = size + current_position -1;
-    for (step_counter =  current_position; step_counter < endposition; step_counter++)
+    int endposition = size + current_position - 1;
+    for (step_counter =  current_position; step_counter <= endposition; step_counter++)
     {
       putchar(program_memory[step_counter]);
     }
-    printf("\n");
   }
   else
   {
