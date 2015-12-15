@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 14.12.2015 (by Manfred Böck)
+// Latest Changes: 15.12.2015 (by Patrick Struger)
 //-----------------------------------------------------------------------------
 //
 
@@ -26,7 +26,7 @@ Boolean isBrainfuckCommand(char character_to_check);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
                      Boolean program_loaded);
-int eval(char* brainfuckstring, char* eval_program_memory,
+int eval(char* brainfuckstring,
                         unsigned char* data_segment, int current_position,
                         int seg_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points,
@@ -59,7 +59,6 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded,
 int main (int argc, char *argv[])
 {
   char character = NULL;
-  char* eval_program_memory = NULL;
   unsigned char* data_segment = calloc(1024, 1024 * sizeof(char));
   char* program_memory = calloc(1024, 1024 * sizeof(char));
   int* break_points = calloc(1024, 1024 * sizeof(int));
@@ -150,7 +149,6 @@ int main (int argc, char *argv[])
         if (first_parameter != NULL)
         {
           segment_position = eval(first_parameter,
-                                                 eval_program_memory,
                                                  data_segment,
                                                  current_position,
                                                  segment_position,
@@ -502,7 +500,7 @@ Boolean isBrainfuckCommand(char character_to_check)
 /// @param break_points Int Array with all breakpoints.
 /// @return int The current position //TODO
 //
-int eval(char* brainfuckstring, char* eval_program_memory,
+int eval(char* brainfuckstring,
                         unsigned char* data_segment, int current_position,
                         int seg_position, int* break_points)
 {
@@ -511,10 +509,7 @@ int eval(char* brainfuckstring, char* eval_program_memory,
     int bf_size = 2;
     int bf_index = 0;
     int string_index = 0;
-    if(eval_program_memory == NULL)
-    {
-      eval_program_memory = malloc(bf_size * sizeof(char));
-    }
+    char* eval_program_memory = malloc(bf_size * sizeof(char));
     //check if it is a brainfuck command
     for(string_index = 0;
         string_index < strlen(brainfuckstring); string_index++)
