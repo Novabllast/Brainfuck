@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 15.12.2015 (by Patrick Struger)
+// Latest Changes: 15.12.2015 (by Struger Patrick)
 //-----------------------------------------------------------------------------
 //
 
@@ -25,14 +25,15 @@ int loadBrainfuckFile(char* filename, char* program_memory);
 Boolean isBrainfuckCommand(char character_to_check);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
-                     Boolean program_loaded);
+                     int segment_position, Boolean program_loaded);
 int eval(char* brainfuckstring,
                         unsigned char* data_segment, int current_position,
                         int seg_position, int* break_points);
 void setBreakPoint(int program_counter, int* break_points,
                    Boolean program_loaded);
 int step(int number, char* program_memory, unsigned char* data_segment,
-         int* break_points, int current_position, Boolean program_loaded);
+         int* break_points, int current_position, int segment_position,
+         Boolean program_loaded);
 void memory(int number, char* type, Boolean is_data_segment_loaded,
             unsigned char* data_segment);
 void show(int size, char* program_memory, int current_position,
@@ -58,7 +59,7 @@ void change(int number, char* hex_byte, Boolean is_data_segment_loaded,
 
 int main (int argc, char *argv[])
 {
-  char character = NULL;
+  char character = 0;
   unsigned char* data_segment = calloc(1024, 1024 * sizeof(char));
   char* program_memory = calloc(1024, 1024 * sizeof(char));
   int* break_points = calloc(1024, 1024 * sizeof(int));
@@ -121,6 +122,7 @@ int main (int argc, char *argv[])
               //Reset data_segment for new program
               if(data_segment != NULL)
               {
+                segment_position = 0;
                 free(data_segment);
                 data_segment = NULL;
               }
@@ -133,15 +135,17 @@ int main (int argc, char *argv[])
       }
       else if (strcmp(action, "run") == 0)
       {
+        segment_position = 0;
         int endposition = strlen(program_memory);
         current_position = runBrainfuckFile(program_memory, data_segment,
                                             break_points, current_position,
-                                            endposition, run_instructions);
-    	int instructions_length = strlen(program_memory);
-    	if (current_position > instructions_length &&
-        		current_position != 0) {
-            run_instructions = FALSE;
-    	}
+                                            endposition, segment_position, 
+                                            run_instructions);
+        int instructions_length = strlen(program_memory);
+        if (current_position > instructions_length && current_position != 0)
+        {
+          run_instructions = FALSE;
+        }
       }
       else if (strcmp(action, "eval") == 0)
       {
@@ -156,7 +160,7 @@ int main (int argc, char *argv[])
           if(segment_position >= 0)
           {
             is_data_segment_loaded = TRUE;
-          }
+          } 
         }
       }
       else if (strcmp(action, "break") == 0)
@@ -178,7 +182,7 @@ int main (int argc, char *argv[])
         }
         current_position = step(atoi(first_parameter),program_memory,
                                 data_segment, break_points, current_position,
-                                is_program_loaded);
+                                segment_position, is_program_loaded);
     	int instructions_length = strlen(program_memory);
     	if (current_position > instructions_length &&
     		current_position != 0) {
@@ -227,6 +231,11 @@ int main (int argc, char *argv[])
         if (first_parameter == NULL && second_parameter == NULL)
         {
           change(segment_position, "00", is_data_segment_loaded, data_segment);
+        }
+        else if (first_parameter != NULL && second_parameter == NULL)
+        {
+          change(atoi(first_parameter), "00",
+                 is_data_segment_loaded, data_segment);
         }
         else if (first_parameter != NULL && second_parameter != NULL)
         {
@@ -282,10 +291,12 @@ int main (int argc, char *argv[])
         default:
           break;
       }
+      segment_position = 0;
       int endposition = strlen(program_memory);
       current_position = runBrainfuckFile(program_memory, data_segment,
                                           break_points, current_position,
-                                          endposition, is_program_loaded);
+                                          endposition, segment_position,
+                                          is_program_loaded);
     }
     else
     {
@@ -369,14 +380,15 @@ int runBrainfuckFile(char* program_memory,
                      unsigned char* data_segment,
                      int* break_points,
                      int startposition, int endposition,
-                     Boolean run_instructions)
+                     int segment_position, Boolean run_instructions)
 {
+  data_segment = data_segment + segment_position;
   int currrent_position = 0;
   if (run_instructions)
   {
 	Boolean break_point_detected = FALSE;
-	unsigned char brainfuck_character = NULL;
-	int current_cell_index = 0;
+	char brainfuck_character = 0;
+	int current_cell_index = segment_position;
 	// to find paired brackets
     int bracket_counter = 0;
 	for(currrent_position = startposition; !break_point_detected &&
@@ -504,6 +516,7 @@ int eval(char* brainfuckstring,
                         unsigned char* data_segment, int current_position,
                         int seg_position, int* break_points)
 {
+  int position = seg_position;
   if(strlen(brainfuckstring) < 80)
   {
     int bf_size = 2;
@@ -523,12 +536,12 @@ int eval(char* brainfuckstring,
         switch(brainfuckstring[string_index])
         {
           case '>':
-            seg_position++;
+            position++;
             break;
           case '<':
-            if(seg_position > 0)
+            if(position > 0)
             {
-              seg_position--;
+              position--;
             }
             break;
           default:
@@ -538,7 +551,8 @@ int eval(char* brainfuckstring,
     }
     int endposition = strlen(eval_program_memory);
     runBrainfuckFile(eval_program_memory, data_segment,
-                     break_points, current_position, endposition, TRUE);
+                     break_points, current_position, endposition,
+                     seg_position, TRUE);
     free(eval_program_memory);
     eval_program_memory = NULL;
   }
@@ -546,7 +560,7 @@ int eval(char* brainfuckstring,
   {
     return -1;
   }
-  return seg_position;
+  return position;
 }
 
 //-----------------------------------------------------------------------------
@@ -585,13 +599,14 @@ void setBreakPoint(int program_counter, int* break_points,
 /// @return int The current position //TODO
 //
 int step(int number, char* program_memory, unsigned char* data_segment,
-         int* break_points, int current_position, Boolean program_loaded)
+         int* break_points, int current_position, int segment_position, Boolean program_loaded)
 {
   if (program_loaded)
   {
     number--;
     current_position = runBrainfuckFile(program_memory, data_segment,
-                       break_points, current_position, number, program_loaded);
+                       break_points, current_position, number,
+                       segment_position, program_loaded);
   }
   else
   {
