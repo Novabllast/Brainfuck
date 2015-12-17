@@ -21,18 +21,26 @@ typedef enum _Boolean_
       TRUE = 1
 } Boolean;
 
+int checkReturnValue(int return_value);
 Boolean isBrainfuckCommand(char character_to_check);
 int loadBrainfuckFile(char* filename, char* program_memory);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
-                     int segment_position, Boolean program_loaded);
+                     int* segment_position, Boolean program_loaded);
+int eval(char* brainfuckstring, unsigned char* data_segment,
+         int current_position, int* seg_position, int* break_points);
+void setBreakPoint(int program_counter, int* break_points,
+                   Boolean program_loaded);
+int step(int number, char* program_memory, unsigned char* data_segment,
+         int* break_points, int current_position, int* segment_position,
+         Boolean program_loaded);
 int loadAndRunWithParameter(char *argv[]);
 int interactiveDebugMode();
-int handleUserInput(char* user_input, char* delimiter, char* program_memory, 
-                    char* data_segment, int* break_points, int current_position,
-                    int segment_position,
-                    Boolean run_instructions, Boolean is_program_loaded,
-                    Boolean is_data_segment_loaded);
+int handleUserInput(char* action, char* delimiter, char* program_memory, 
+                    unsigned char** data_segment, int* break_points,
+                    int* current_position, int* segment_position,
+                    Boolean* run_instructions, Boolean* is_program_loaded,
+                    Boolean* is_data_segment_loaded);
 
 #define INCORRECT_PROGRAM_CALL 1
 #define OUT_OF_MEMORY 2
@@ -108,6 +116,31 @@ Boolean isBrainfuckCommand(char character_to_check)
 
 //-----------------------------------------------------------------------------
 ///
+/// Function to check what kind of return
+///
+/// @param int Return value to check.
+/// @return int (2)   - out of memory
+///         int (4)   - reading the file failed
+///         int (100) - program was successfully loaded
+//
+int checkReturnValue(int return_value)
+{
+  switch (return_value)
+  {
+    case OUT_OF_MEMORY:
+      printf(ERROR_OUT_OF_MEMORY);
+      break;
+    case READING_THE_FILE_FAILED:
+      printf(READING_THE_FILE_FAILED_MESSAGE);
+      break;
+    default:
+      break;
+  }
+  return return_value;
+}
+
+//-----------------------------------------------------------------------------
+///
 /// Loads the given file into the program memory.
 ///
 /// @param filename filename The Path of the file which should be loaded.
@@ -145,7 +178,6 @@ int loadBrainfuckFile(char *filename, char* program_memory)
         {
           free(program_memory);
           program_memory = NULL;
-          printf(ERROR_OUT_OF_MEMORY);
           return_value =  OUT_OF_MEMORY;
         }
       }
@@ -167,19 +199,19 @@ int loadBrainfuckFile(char *filename, char* program_memory)
 /// @param endposition Position of the last command to execute.
 /// @param segment_position Current position of the data pointer.
 /// @param run_instructions Boolean to check if program should be executed.
-/// @return int The current position Position of the last executed command.      
+/// @return int The current position of the last executed command.      
 //
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
-                     int segment_position, Boolean run_instructions)
+                     int* segment_position, Boolean run_instructions)
 {
   int currrent_position = 0;
-  data_segment = data_segment + segment_position;
+  data_segment = data_segment + *segment_position;
   if (run_instructions)
   {
     char brainfuck_character = 0;
     Boolean break_point_detected = FALSE;
-    int current_cell_index = segment_position;
+    int current_cell_index = *segment_position;
     // to find paired brackets
     int bracket_counter = 0;
 	  for(currrent_position = startposition; !break_point_detected &&
@@ -188,11 +220,12 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
       if (break_points[currrent_position] != 1)
       {
         brainfuck_character = program_memory[currrent_position];
-        //interpret brainfuck
+        //interpret brainfuck        
         switch (brainfuck_character)
         {
           case '>': // increment pointer
             current_cell_index++;
+            *segment_position = *segment_position + 1;
             ++data_segment;
             break;
           case '<': // decrement pointer
@@ -200,6 +233,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
             if(current_cell_index > 0)
             {
               current_cell_index--;
+              *segment_position = *segment_position - 1;
               --data_segment;
             }
             break;
@@ -249,9 +283,9 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
       }
       else
       {
-        currrent_position--;
         break_points[currrent_position] = 0;
         break_point_detected = TRUE;
+        currrent_position--;
       }
     }
   }
@@ -259,7 +293,110 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
   {
     printf(NO_PROGRAM_LOADED);
   }
+  printf("Segment int Row 2 %d", *segment_position);
   return currrent_position;
+}
+
+//-----------------------------------------------------------------------------
+///
+/// Executes the given Brainfuck commands.
+///
+/// @param brainfuckstring The commands to be executed.
+/// @param eval_program_memory //TODO
+/// @param data_segment Unsigned Char Array containing the data pointers.
+/// @param current_position The current position in the Brainfuck source code.
+/// @param segment_position The current position in the data segment.
+/// @param break_points Int Array with all breakpoints.
+/// @return int The current position of the datasegment.
+//
+int eval(char* brainfuckstring, unsigned char* data_segment,
+         int current_position, int* seg_position, int* break_points)
+{
+  if (strlen(brainfuckstring) < 80)
+  {
+    int bf_index = 0;
+    int endposition = 0;
+    int string_index = 0;
+    Boolean program_loaded = TRUE;
+    char* eval_program_memory = malloc(1 * sizeof(char));
+    
+    //check if it is a brainfuck command
+    for (string_index = 0; string_index < strlen(brainfuckstring);
+         string_index++)
+    {
+      if (isBrainfuckCommand(brainfuckstring[string_index]))
+      {
+        eval_program_memory[bf_index] = brainfuckstring[string_index];
+        bf_index++;
+        eval_program_memory = realloc(eval_program_memory,
+                                      (bf_index + 1) * sizeof(char));
+      }
+    }
+    eval_program_memory[bf_index] = '\0';
+    endposition = strlen(eval_program_memory);
+    runBrainfuckFile(eval_program_memory, data_segment,
+                     break_points, current_position, endposition,
+                     seg_position, program_loaded);
+    free(eval_program_memory);
+    eval_program_memory = NULL;
+  }
+  else
+  {
+    return -1;
+  }
+  return *seg_position;
+}
+
+//-----------------------------------------------------------------------------
+///
+/// Sets a breakpoint in the loaded program.
+///
+/// @param program_counter The position where the breakpoint should be set.
+/// @param break_points Int Array where the breakpoint should be set.
+/// @param program_loaded Boolean whether a Brainfuck program has been loaded
+///        or not.
+//
+void setBreakPoint(int program_counter, int* break_points,
+                   Boolean program_loaded)
+{
+  if (program_loaded)
+  {
+    break_points[program_counter] = 1;
+  }
+  else
+  {
+    printf(NO_PROGRAM_LOADED);
+  }
+}
+
+//-----------------------------------------------------------------------------
+///
+/// Executes @number steps of the loaded program.
+///
+/// @param number The number of the steps to be executed.
+/// @param program_memory Int Array with the Brainfuck instructions.
+/// @param data_segment Unsigned Char Array containing the data pointers.
+/// @param break_points Int Array with all breakpoints.
+/// @param current_position The current position in the Brainfuck source code.
+/// @param program_loaded Boolean whether a Brainfuck program has been loaded
+///        or not.
+/// @return int The current position of the last executed command.
+//
+int step(int number, char* program_memory, unsigned char* data_segment,
+         int* break_points, int current_position, int* segment_position,
+         Boolean program_loaded)
+{
+  if (program_loaded)
+  {
+    current_position = runBrainfuckFile(program_memory, data_segment,
+                       break_points, current_position, number,
+                       segment_position, program_loaded);
+  }
+  else
+  {
+    printf(NO_PROGRAM_LOADED);
+  }
+  return current_position;
 }
 
 //-----------------------------------------------------------------------------
@@ -280,30 +417,19 @@ int loadAndRunWithParameter(char* argv[])
     int has_succeeded = -1;
     char* filename = argv[2];
     Boolean is_program_loaded = FALSE;
-    int* break_points = calloc(1024, 1024 * sizeof(int));
-    char* program_memory = calloc(1024, 1024 * sizeof(char));
+    int* break_points = calloc(1024, sizeof(int));
+    char* program_memory = calloc(1024, sizeof(char));
     has_succeeded = loadBrainfuckFile(filename, program_memory);
-    unsigned char* data_segment = calloc(1024, 1024 * sizeof(char));
+    unsigned char* data_segment = calloc(1024, sizeof(char));
     
-    switch (has_succeeded)
+    if(checkReturnValue(has_succeeded) == PROGRAM_SUCCESSFULLY_LOADED)
     {
-      case OUT_OF_MEMORY:
-        return OUT_OF_MEMORY;
-        break;
-      case READING_THE_FILE_FAILED:
-        return READING_THE_FILE_FAILED;
-        break;
-      case PROGRAM_SUCCESSFULLY_LOADED:
-        is_program_loaded = TRUE;
-        break;
-      default:
-        break;
+      is_program_loaded = TRUE;
+      endposition = strlen(program_memory);
+      runBrainfuckFile(program_memory, data_segment, break_points,
+                       0, endposition, 0,
+                       is_program_loaded);
     }
-    
-    endposition = strlen(program_memory);
-    runBrainfuckFile(program_memory, data_segment, break_points,
-                     0, endposition, 0,
-                     is_program_loaded);
                      
     free(program_memory);
     program_memory = NULL;
@@ -324,9 +450,9 @@ int loadAndRunWithParameter(char* argv[])
 ///
 /// Function to start interactive debug mode reacting to user inputs
 ///
-/// @param argv char Array which contains all parameters from the terminal.
-/// @return int (2)   - out of memory
-///         int (4)   - reading the file failed
+/// @return int (0) - no errors
+///         int (2) - out of memory
+///         int (4) - reading the file failed
 //
 int interactiveDebugMode()
 {
@@ -335,7 +461,6 @@ int interactiveDebugMode()
   int return_value = 0;
   int current_position = 0;
   int segment_position = 0;
-  int user_input_length = 0;
   int action_input_counter = 0;
   
   Boolean close_program = FALSE;
@@ -343,13 +468,13 @@ int interactiveDebugMode()
   Boolean is_program_loaded = FALSE;
   Boolean is_data_segment_loaded = FALSE;
   
-  char* delimiter = " ";
   char* action = NULL;
-  char* user_input= calloc(2, sizeof(char));
+  char* delimiter = " ";
+  char* user_input= calloc(1, sizeof(char));
   
-  int* break_points = calloc(1024, 1024 * sizeof(int));
-  char* program_memory = calloc(1024, 1024 * sizeof(char));
-  unsigned char* data_segment = calloc(1024, 1024 * sizeof(char));
+  int* break_points = calloc(1024, sizeof(int));
+  char* program_memory = calloc(1024, sizeof(char));
+  unsigned char* data_segment = calloc(1024, sizeof(char));
   
   while (!close_program)
   {
@@ -358,7 +483,8 @@ int interactiveDebugMode()
     {
       user_input[action_input_counter] = character;
       action_input_counter++;
-      user_input = realloc(user_input, (action_input_counter + 1) * sizeof(char));
+      user_input = realloc(user_input, 
+                           (action_input_counter + 1) * sizeof(char));
       
       if(user_input == NULL)
       {
@@ -368,9 +494,8 @@ int interactiveDebugMode()
         return_value = OUT_OF_MEMORY;
       }
     }
+    
     user_input[action_input_counter] = '\0';
-    putchar(user_input[action_input_counter]);
-    user_input_length = strlen(user_input);
     action = strtok(user_input, delimiter);
     
     //Exits the program with a message
@@ -386,29 +511,19 @@ int interactiveDebugMode()
     }
     else 
     {
-      /*return_value = handleUserInput(user_input, delimiter, program_memory,
-                                     data_segment, break_points,
-                                     current_position,
-                                     segment_position, run_instructions,
-                                     is_program_loaded,
-                                     is_data_segment_loaded);*/
-                                     
-      switch (return_value)
-      {
-        case OUT_OF_MEMORY:
-          return OUT_OF_MEMORY;
-          break;
-        case READING_THE_FILE_FAILED:
-          return READING_THE_FILE_FAILED;
-          break;
-        default:
-          break;
-      }
+      //int* segment_pos = &segment_position;
+      unsigned char** data = &data_segment;
+      return_value = handleUserInput(action, delimiter, program_memory,
+                                     data, break_points,
+                                     &current_position,
+                                     &segment_position, &run_instructions,
+                                     &is_program_loaded,
+                                     &is_data_segment_loaded);
+       printf("Segment %d\n", segment_position);               
     }
-    //printf("%i: ", current_position);
     //Resets the user input string
     action_input_counter = 0;
-    memset(user_input,'\0',user_input_length);
+    user_input = realloc(user_input, 2 * sizeof(char));
   }
   
   free(user_input);
@@ -430,19 +545,94 @@ int interactiveDebugMode()
 /// @param argv char Array which contains all parameters from the terminal.
 /// @return int (2)   - out of memory
 ///         int (4)   - reading the file failed
-///         int (100) - file successfully loaded 
 //
-int handleUserInput(char* user_input, char* delimiter, char* program_memory, 
-                    char* data_segment, int* break_points, int current_position,
-                    int segment_position,
-                    Boolean run_instructions, Boolean is_program_loaded,
-                    Boolean is_data_segment_loaded)
+int handleUserInput(char* action, char* delimiter, char* program_memory, 
+                    unsigned char** data_segment, int* break_points,
+                    int* current_position, int* segment_position,
+                    Boolean* run_instructions, Boolean* is_program_loaded,
+                    Boolean* is_data_segment_loaded)
 {
   int return_value = 0;
+  int instruction_length = strlen(program_memory);
+  
   char* first_parameter = NULL;
   char* second_parameter = NULL;
   first_parameter = strtok(NULL, delimiter);
-  printf("%s", first_parameter);
-  current_position = 1111;
+  second_parameter = strtok(NULL, delimiter);
+  
+  if (strcmp(action, "load") == 0)
+  {
+    if (first_parameter)
+    {
+      int has_succeeded = -1;
+      has_succeeded = loadBrainfuckFile(first_parameter, program_memory);
+      if (checkReturnValue(has_succeeded) == PROGRAM_SUCCESSFULLY_LOADED)
+      {
+        *current_position = 0;
+        *run_instructions = TRUE;
+        *is_program_loaded = TRUE;
+        *is_data_segment_loaded = TRUE;
+        //Reset data_segment for new program
+        if (data_segment != NULL)
+        {
+          free(*data_segment);
+          *data_segment = NULL;
+          *segment_position = 0;
+        }
+        *data_segment = calloc(1024, sizeof(char));
+      }
+    }
+  }
+  else if (strcmp(action, "run") == 0)
+  {
+    *current_position = runBrainfuckFile(program_memory, *data_segment,
+                                        break_points, *current_position,
+                                        instruction_length, segment_position, 
+                                        *run_instructions);
+    if (*current_position > instruction_length && *current_position != 0)
+    {
+      *run_instructions = FALSE;
+    }
+  }
+  else if (strcmp(action, "eval") == 0)
+  {
+    if (first_parameter)
+    {
+      eval(first_parameter, *data_segment, *current_position,
+           segment_position, break_points);
+      printf("Segment 1: %d", *segment_position);
+      if(*segment_position >= 0)
+      {
+        *is_data_segment_loaded = TRUE;
+      } 
+    }
+  }
+  else if (strcmp(action, "break") == 0)
+  {
+    if (first_parameter)
+    {
+      setBreakPoint(atoi(first_parameter), break_points, *is_program_loaded);
+    }
+  } 
+  else if(strcmp(action, "step") == 0)
+  {
+    if(first_parameter == NULL)
+    {
+      //Default-value
+      first_parameter = "1";
+    }
+    int steps = atoi(first_parameter);
+    steps = *current_position + steps - 1;
+    if (steps <= instruction_length)
+    {
+      *current_position = step(steps, program_memory,
+                              *data_segment, break_points, *current_position,
+                              segment_position, *is_program_loaded);
+    }
+    if (*current_position > instruction_length && *current_position != 0)
+    {
+      *run_instructions = FALSE;
+    }
+  }
   return return_value;
 }
