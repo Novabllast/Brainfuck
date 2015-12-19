@@ -42,7 +42,7 @@ void memory(int number, char* type, Boolean is_data_segment_loaded,
             unsigned char* data_segment);
 int loadAndRunWithParameter(char *argv[]);
 int interactiveDebugMode();
-int handleUserInput(char* action, char* delimiter, char* program_memory, 
+int handleUserInput(char* action, char* delimiter, char* program_memory,
                     unsigned char** data_segment, int* break_points,
                     int* current_position, int* segment_position,
                     Boolean* run_instructions, Boolean* is_program_loaded,
@@ -72,12 +72,12 @@ int main(int argc, char *argv[])
   }
   // load and run via terminal
   else if (argc >= 3)
-  {    
+  {
     int has_succeeded = -1;
     has_succeeded = loadAndRunWithParameter(argv);
     return checkReturnValue(has_succeeded);
   }
-  
+
   return 0;
 }
 
@@ -161,7 +161,7 @@ int loadBrainfuckFile(char *filename, char* program_memory)
   {
     int program_memory_size_limit = 1023;
     int program_memory_size = sizeof(char) / sizeof(program_memory[0]);
-    
+
     while ((character = fgetc(file_to_read)) != EOF)
     {
       if (isBrainfuckCommand(character))
@@ -198,7 +198,7 @@ int loadBrainfuckFile(char *filename, char* program_memory)
 /// @param endposition Position of the last command to execute.
 /// @param segment_position Current position of the data pointer.
 /// @param run_instructions Boolean to check if program should be executed.
-/// @return int The current position of the last executed command.      
+/// @return int The current position of the last executed command.
 //
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
@@ -219,7 +219,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
       if (break_points[currrent_position] != 1)
       {
         brainfuck_character = program_memory[currrent_position];
-        //interpret brainfuck        
+        //interpret brainfuck
         switch (brainfuck_character)
         {
           case '>': // increment pointer
@@ -292,7 +292,6 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
   {
     printf(NO_PROGRAM_LOADED);
   }
-  printf("Segment int Row 2 %d", *segment_position);
   return currrent_position;
 }
 
@@ -301,7 +300,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
 /// Executes the given Brainfuck commands.
 ///
 /// @param brainfuckstring The commands to be executed.
-/// @param eval_program_memory //TODO
+/// @param eval_program_memory Char Array containing Brainfuck commands.
 /// @param data_segment Unsigned Char Array containing the data pointers.
 /// @param current_position The current position in the Brainfuck source code.
 /// @param segment_position The current position in the data segment.
@@ -318,7 +317,7 @@ void eval(char* brainfuckstring, unsigned char* data_segment,
     int string_index = 0;
     Boolean program_loaded = TRUE;
     char* eval_program_memory = malloc(1 * sizeof(char));
-    
+
     //check if it is a brainfuck command
     for (string_index = 0; string_index < strlen(brainfuckstring);
          string_index++)
@@ -510,7 +509,7 @@ int step(int number, char* program_memory, unsigned char* data_segment,
 /// @param argv char Array which contains all parameters from the terminal.
 /// @return int (2)   - out of memory
 ///         int (4)   - reading the file failed
-///         int (100) - file successfully loaded 
+///         int (100) - file successfully loaded
 //
 int loadAndRunWithParameter(char* argv[])
 {
@@ -525,7 +524,7 @@ int loadAndRunWithParameter(char* argv[])
     char* program_memory = calloc(1024, sizeof(char));
     has_succeeded = loadBrainfuckFile(filename, program_memory);
     unsigned char* data_segment = calloc(1024, sizeof(unsigned char));
-    
+
     if(checkReturnValue(has_succeeded) == PROGRAM_SUCCESSFULLY_LOADED)
     {
       is_program_loaded = TRUE;
@@ -534,7 +533,7 @@ int loadAndRunWithParameter(char* argv[])
                        0, endposition, &segment_position,
                        is_program_loaded);
     }
-                     
+
     free(program_memory);
     program_memory = NULL;
     free(data_segment);
@@ -561,25 +560,25 @@ int loadAndRunWithParameter(char* argv[])
 int interactiveDebugMode()
 {
   char character = 0;
-  
+
   int return_value = 0;
   int current_position = 0;
   int segment_position = 0;
   int action_input_counter = 0;
-  
+
   Boolean close_program = FALSE;
   Boolean run_instructions = FALSE;
   Boolean is_program_loaded = FALSE;
   Boolean is_data_segment_loaded = FALSE;
-  
+
   char* action = NULL;
   char* delimiter = " ";
   char* user_input= calloc(1, sizeof(char));
-  
+
   int* break_points = calloc(1024, sizeof(int));
   char* program_memory = calloc(1024, sizeof(char));
   unsigned char* data_segment = calloc(1024, sizeof(unsigned char));
-  
+
   while (!close_program)
   {
     printf("esp> ");
@@ -587,9 +586,9 @@ int interactiveDebugMode()
     {
       user_input[action_input_counter] = character;
       action_input_counter++;
-      user_input = realloc(user_input, 
+      user_input = realloc(user_input,
                            (action_input_counter + 1) * sizeof(char));
-      
+
       if(user_input == NULL)
       {
         free(user_input);
@@ -598,9 +597,9 @@ int interactiveDebugMode()
         return_value = OUT_OF_MEMORY;
       }
     }
-    
+
     //check if there is a user input
-    if (user_input[0] != 0) 
+    if (user_input[0] != 0)
     {
       user_input[action_input_counter] = '\0';
       action = strtok(user_input, delimiter);
@@ -615,7 +614,7 @@ int interactiveDebugMode()
       {
         close_program = TRUE;
       }
-      else 
+      else
       {
         //int* segment_pos = &segment_position;
         unsigned char** data = &data_segment;
@@ -625,16 +624,15 @@ int interactiveDebugMode()
                                        &segment_position, &run_instructions,
                                        &is_program_loaded,
                                        &is_data_segment_loaded);
-         printf("Segment %d\n", segment_position);               
       }
     }
-    
+
     //Resets the user input string
     action_input_counter = 0;
     user_input = realloc(user_input, 2 * sizeof(char));
     user_input[0] = '\0';
   }
-  
+
   free(user_input);
   user_input = NULL;
   free(program_memory);
@@ -643,7 +641,7 @@ int interactiveDebugMode()
   data_segment = NULL;
   free(break_points);
   break_points = NULL;
-  
+
   return return_value;
 }
 
@@ -655,7 +653,7 @@ int interactiveDebugMode()
 /// @return int (2)   - out of memory
 ///         int (4)   - reading the file failed
 //
-int handleUserInput(char* action, char* delimiter, char* program_memory, 
+int handleUserInput(char* action, char* delimiter, char* program_memory,
                     unsigned char** data_segment, int* break_points,
                     int* current_position, int* segment_position,
                     Boolean* run_instructions, Boolean* is_program_loaded,
@@ -663,12 +661,12 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
 {
   int return_value = 0;
   int instruction_length = strlen(program_memory);
-  
+
   char* first_parameter = NULL;
   char* second_parameter = NULL;
   first_parameter = strtok(NULL, delimiter);
   second_parameter = strtok(NULL, delimiter);
-  
+
   if (strcmp(action, "load") == 0)
   {
     if (first_parameter)
@@ -696,7 +694,7 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
   {
     *current_position = runBrainfuckFile(program_memory, *data_segment,
                                         break_points, *current_position,
-                                        instruction_length, segment_position, 
+                                        instruction_length, segment_position,
                                         *run_instructions);
     if (*current_position > instruction_length && *current_position != 0)
       *run_instructions = FALSE;
@@ -707,7 +705,6 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
     {
       eval(first_parameter, *data_segment, *current_position,
            segment_position, break_points);
-      printf("Segment 1: %d", *segment_position);
       if(*segment_position >= 0)
         *is_data_segment_loaded = TRUE;
     }
@@ -716,7 +713,7 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
   {
     if (first_parameter)
       setBreakPoint(atoi(first_parameter), break_points, *is_program_loaded);
-  } 
+  }
   else if(strcmp(action, "step") == 0)
   {
     if(!first_parameter)
@@ -726,12 +723,12 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
     }
     int steps = atoi(first_parameter);
     steps = *current_position + steps - 1;
-    
+
     if (steps <= instruction_length)
       *current_position = step(steps, program_memory,
                                *data_segment, break_points, *current_position,
                                segment_position, *is_program_loaded);
-                              
+
     if (*current_position > instruction_length && *current_position != 0)
       *run_instructions = FALSE;
   }
@@ -745,7 +742,7 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
       show_count = (instruction_length - *current_position);
     else
       show_count = atoi(first_parameter);
-      
+
     show(show_count, program_memory, *current_position, *is_program_loaded);
   }
   else if (strcmp(action, "memory") == 0)
@@ -755,10 +752,10 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
     {
       if(check_in_memory_range(atoi(first_parameter), *segment_position))
         memory_position = *segment_position;
-      else 
+      else
         memory_position = atoi(first_parameter);
     }
-    
+
     if (first_parameter && !second_parameter)
     {
       //Default-values
@@ -784,10 +781,10 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
     {
       if(check_in_memory_range(atoi(first_parameter), *segment_position))
         change_position = *segment_position;
-      else 
+      else
         change_position = atoi(first_parameter);
     }
-    
+
     if (!first_parameter && !second_parameter)
       change(*segment_position, "00", *is_data_segment_loaded, *data_segment);
     else if (first_parameter && !second_parameter)
@@ -801,7 +798,7 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
                *is_data_segment_loaded, *data_segment);
     }
   }
-      
+
   return return_value;
 }
 
