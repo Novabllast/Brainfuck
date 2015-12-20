@@ -23,7 +23,7 @@ typedef enum _Boolean_
 
 int checkReturnValue(int return_value);
 Boolean isBrainfuckCommand(char character_to_check);
-int loadBrainfuckFile(char* filename, char* program_memory);
+int loadBrainfuckFile(char* filename, char** program_memory);
 int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
                      int* segment_position, Boolean program_loaded);
@@ -142,14 +142,14 @@ int checkReturnValue(int return_value)
 /// Loads the given file into the program memory.
 ///
 /// @param filename filename The Path of the file which should be loaded.
+/// @param program_memory Char Array to store Brainfuck commands.
 /// @return int (2)   - out of memory
 ///         int (4)   - reading the file failed
 ///         int (100) - file successfully loaded
 //
-int loadBrainfuckFile(char *filename, char* program_memory)
+int loadBrainfuckFile(char *filename, char** program_memory)
 {
   char character;
-  int character_counter = 0;
   int return_value = READING_THE_FILE_FAILED;
 
   FILE *file_to_read = fopen(filename, "r");
@@ -159,28 +159,32 @@ int loadBrainfuckFile(char *filename, char* program_memory)
   }
   else
   {
+    int program_memory_size = 0;
     int program_memory_size_limit = 1023;
-    int program_memory_size = sizeof(char) / sizeof(program_memory[0]);
 
     while ((character = fgetc(file_to_read)) != EOF)
     {
       if (isBrainfuckCommand(character))
       {
-        program_memory[character_counter++]=character;
-        if (program_memory_size == program_memory_size_limit)
+        (*program_memory)[program_memory_size] = character;
+        program_memory_size++;
+        if (program_memory_size >= program_memory_size_limit)
         {
           program_memory_size_limit *= 2;
-          program_memory=realloc(program_memory, 2 * program_memory_size);
-        }
-        if (program_memory == NULL)
-        {
-          free(program_memory);
-          program_memory = NULL;
-          fclose(file_to_read);
-          return OUT_OF_MEMORY;
+          *program_memory = realloc(*program_memory, 2 * program_memory_size + 1);
+
+          if (*program_memory == NULL)
+          {
+            free(*program_memory);
+            *program_memory = NULL;
+            fclose(file_to_read);
+            return OUT_OF_MEMORY;
+          }
         }
       }
     }
+
+    (*program_memory)[program_memory_size] = '\0';
     fclose(file_to_read);
     return_value =  PROGRAM_SUCCESSFULLY_LOADED;
   }
@@ -204,7 +208,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
                      int* break_points, int startposition, int endposition,
                      int* segment_position, Boolean run_instructions)
 {
-  int currrent_position = 0;
+  int current_position = 0;
   data_segment = data_segment + *segment_position;
   if (run_instructions)
   {
@@ -213,12 +217,12 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
     int current_cell_index = *segment_position;
     // to find paired brackets
     int bracket_counter = 0;
-	  for(currrent_position = startposition; !break_point_detected &&
-        currrent_position <= endposition; currrent_position++)
-	  {
-      if (break_points[currrent_position] != 1)
+    for(current_position = startposition; !break_point_detected &&
+      current_position <= endposition; current_position++)
+    {
+      if (break_points[current_position] != 1)
       {
-        brainfuck_character = program_memory[currrent_position];
+        brainfuck_character = program_memory[current_position];
         //interpret brainfuck
         switch (brainfuck_character)
         {
@@ -254,10 +258,10 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
               bracket_counter++;
               while(bracket_counter)
               {
-                currrent_position++;
-                if(program_memory[currrent_position] == ']')
+                current_position++;
+                if(program_memory[current_position] == ']')
                   bracket_counter--;
-                else if(program_memory[currrent_position] == '[')
+                else if(program_memory[current_position] == '[')
                   bracket_counter++;
               }
             }
@@ -268,10 +272,10 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
               bracket_counter++;
               while(bracket_counter)
               {
-                currrent_position--;
-                if(program_memory[currrent_position] == '[')
+                current_position--;
+                if(program_memory[current_position] == '[')
                   bracket_counter--;
-                else if(program_memory[currrent_position] == ']')
+                else if(program_memory[current_position] == ']')
                   bracket_counter++;
               }
             }
@@ -282,9 +286,9 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
       }
       else
       {
-        break_points[currrent_position] = 0;
+        break_points[current_position] = 0;
         break_point_detected = TRUE;
-        currrent_position--;
+        current_position--;
       }
     }
   }
@@ -292,7 +296,7 @@ int runBrainfuckFile(char* program_memory, unsigned char* data_segment,
   {
     printf(NO_PROGRAM_LOADED);
   }
-  return currrent_position;
+  return current_position;
 }
 
 //-----------------------------------------------------------------------------
@@ -522,13 +526,14 @@ int loadAndRunWithParameter(char* argv[])
     int segment_position = 0;
     int* break_points = calloc(1024, sizeof(int));
     char* program_memory = calloc(1024, sizeof(char));
-    has_succeeded = loadBrainfuckFile(filename, program_memory);
     unsigned char* data_segment = calloc(1024, sizeof(unsigned char));
 
-    if(checkReturnValue(has_succeeded) == PROGRAM_SUCCESSFULLY_LOADED)
+    has_succeeded = loadBrainfuckFile(filename, &program_memory);
+    if(has_succeeded == PROGRAM_SUCCESSFULLY_LOADED)
     {
       is_program_loaded = TRUE;
       endposition = strlen(program_memory);
+      break_points = realloc(break_points, endposition * sizeof(int));
       runBrainfuckFile(program_memory, data_segment, break_points,
                        0, endposition, &segment_position,
                        is_program_loaded);
@@ -616,7 +621,6 @@ int interactiveDebugMode()
       }
       else
       {
-        //int* segment_pos = &segment_position;
         unsigned char** data = &data_segment;
         return_value = handleUserInput(action, delimiter, program_memory,
                                        data, break_points,
@@ -672,7 +676,7 @@ int handleUserInput(char* action, char* delimiter, char* program_memory,
     if (first_parameter)
     {
       int has_succeeded = -1;
-      has_succeeded = loadBrainfuckFile(first_parameter, program_memory);
+      has_succeeded = loadBrainfuckFile(first_parameter, &program_memory);
       if (checkReturnValue(has_succeeded) == PROGRAM_SUCCESSFULLY_LOADED)
       {
         *current_position = 0;
