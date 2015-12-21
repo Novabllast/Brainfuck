@@ -1,7 +1,7 @@
 Manfred
 - [x] Programmaufruf
 - [x] Interaktiver Debug Modus
-- [ ] load <filename>
+- [x] load <filename>
 - [ ] run
 - [x] break <program counter>
 - [x] quit
@@ -11,12 +11,12 @@ Manfred
 Anna
 - [x] show [size]
 - [x] change [number] [hex_byte]
-- [ ] memory [number] [type]
+- [x] memory [number] [type]
 
 
 Patrick
-- [ ] eval <brainfuckstring : maxlen = 80 >
-- [ ] step [number]
+- [x] eval <brainfuckstring : maxlen = 80 >
+- [x] step [number]
 
 
 
