@@ -7,7 +7,7 @@
 //
 // Authors: Manfred Böck 1530598, Anna Haupt 1432018, Patrick Struger 1530664
 //
-// Latest Changes: 18.12.2015 (by Böck Manfred & Struger Patrick)
+// Latest Changes: 21.12.2015 (by Böck Manfred)
 //-----------------------------------------------------------------------------
 //
 
@@ -532,9 +532,11 @@ int loadAndRunWithParameter(char* argv[])
     has_succeeded = loadBrainfuckFile(filename, &program_memory);
     if(has_succeeded == PROGRAM_SUCCESSFULLY_LOADED)
     {
+      has_succeeded = 0;
       is_program_loaded = TRUE;
       endposition = strlen(program_memory);
-      break_points = realloc(break_points, endposition * sizeof(int));
+      break_points = realloc(break_points, 5 + endposition * sizeof(int));
+      memset(break_points, 0, 5 + endposition);
       runBrainfuckFile(program_memory, data_segment, break_points,
                        0, endposition, &segment_position,
                        is_program_loaded);
