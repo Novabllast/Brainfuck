@@ -171,7 +171,8 @@ int loadBrainfuckFile(char *filename, char** program_memory)
         if (program_memory_size >= program_memory_size_limit)
         {
           program_memory_size_limit *= 2;
-          *program_memory = realloc(*program_memory, 2 * program_memory_size + 1);
+          *program_memory = realloc(*program_memory,
+        		                    2 * program_memory_size + 1);
 
           if (*program_memory == NULL)
           {
@@ -569,6 +570,7 @@ int interactiveDebugMode()
   int return_value = 0;
   int current_position = 0;
   int segment_position = 0;
+  int action_input_limit = 50;
   int action_input_counter = 0;
 
   Boolean close_program = FALSE;
@@ -578,7 +580,7 @@ int interactiveDebugMode()
 
   char* action = NULL;
   char* delimiter = " ";
-  char* user_input= calloc(1, sizeof(char));
+  char* user_input= calloc(50, sizeof(char));
 
   int* break_points = calloc(1024, sizeof(int));
   char* program_memory = calloc(1024, sizeof(char));
@@ -591,8 +593,12 @@ int interactiveDebugMode()
     {
       user_input[action_input_counter] = character;
       action_input_counter++;
-      user_input = realloc(user_input,
-                           (action_input_counter + 1) * sizeof(char));
+      if (action_input_counter >= action_input_limit)
+      {printf("%i\n", action_input_counter);
+    	  action_input_limit *= 2;
+          user_input = realloc(user_input,
+                               (action_input_limit + 1) * sizeof(char));
+	  }
 
       if(user_input == NULL)
       {
@@ -615,7 +621,7 @@ int interactiveDebugMode()
         close_program = TRUE;
       }
       //Exits the program without a message
-      else if (strcmp(user_input, "EOF") == 0)
+      else if (strcmp(user_input, "EOF") == 0 || character == EOF)
       {
         close_program = TRUE;
       }
@@ -633,7 +639,7 @@ int interactiveDebugMode()
 
     //Resets the user input string
     action_input_counter = 0;
-    user_input = realloc(user_input, 2 * sizeof(char));
+    user_input = realloc(user_input, 50 * sizeof(char));
     user_input[0] = '\0';
   }
 
